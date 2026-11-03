@@ -6,7 +6,7 @@ from typing import Any
 
 import yaml
 
-EXPECTED_FIELDS = {
+DEMO_EXPECTED_FIELDS = {
     "seed",
     "training_rows",
     "scoring_rows",
@@ -14,6 +14,18 @@ EXPECTED_FIELDS = {
     "limit_balance_multiplier",
     "age_shift",
     "experiment_name",
+    "runtime_dir",
+}
+
+TRAINING_EXPECTED_FIELDS = {
+    "seed",
+    "train_fraction",
+    "validation_fraction",
+    "test_fraction",
+    "simulation_fraction",
+    "experiment_name",
+    "model_version",
+    "data_dir",
     "runtime_dir",
 }
 
@@ -27,6 +39,19 @@ class DemoConfig:
     limit_balance_multiplier: float
     age_shift: int
     experiment_name: str
+    runtime_dir: Path
+
+
+@dataclass(frozen=True)
+class TrainingConfig:
+    seed: int
+    train_fraction: float
+    validation_fraction: float
+    test_fraction: float
+    simulation_fraction: float
+    experiment_name: str
+    model_version: str
+    data_dir: Path
     runtime_dir: Path
 
 
@@ -51,8 +76,8 @@ def load_demo_config(path: str | Path) -> DemoConfig:
         raise ValueError("configuration must be a YAML mapping")
 
     fields = set(payload)
-    missing = sorted(EXPECTED_FIELDS - fields)
-    unknown = sorted(fields - EXPECTED_FIELDS)
+    missing = sorted(DEMO_EXPECTED_FIELDS - fields)
+    unknown = sorted(fields - DEMO_EXPECTED_FIELDS)
     if missing:
         raise ValueError(f"missing configuration fields: {', '.join(missing)}")
     if unknown:
@@ -89,4 +114,47 @@ def load_demo_config(path: str | Path) -> DemoConfig:
         age_shift=age_shift,
         experiment_name=experiment_name,
         runtime_dir=Path(runtime_dir),
+    )
+
+
+def load_training_config(path: str | Path) -> TrainingConfig:
+    config_path = Path(path)
+    payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("configuration must be a YAML mapping")
+
+    fields = set(payload)
+    missing = sorted(TRAINING_EXPECTED_FIELDS - fields)
+    unknown = sorted(fields - TRAINING_EXPECTED_FIELDS)
+    if missing:
+        raise ValueError(f"missing configuration fields: {', '.join(missing)}")
+    if unknown:
+        raise ValueError(f"unknown configuration fields: {', '.join(unknown)}")
+
+    fractions = {
+        name: _require_float(payload, name)
+        for name in (
+            "train_fraction",
+            "validation_fraction",
+            "test_fraction",
+            "simulation_fraction",
+        )
+    }
+    if any(value <= 0 for value in fractions.values()):
+        raise ValueError("partition fractions must be greater than zero")
+    if abs(sum(fractions.values()) - 1.0) > 1e-9:
+        raise ValueError("partition fractions must sum to 1")
+
+    string_fields = ("experiment_name", "model_version", "data_dir", "runtime_dir")
+    for field in string_fields:
+        if not isinstance(payload[field], str) or not payload[field].strip():
+            raise ValueError(f"{field} must be a non-empty string")
+
+    return TrainingConfig(
+        seed=_require_integer(payload, "seed", minimum=0),
+        **fractions,
+        experiment_name=payload["experiment_name"],
+        model_version=payload["model_version"],
+        data_dir=Path(payload["data_dir"]),
+        runtime_dir=Path(payload["runtime_dir"]),
     )

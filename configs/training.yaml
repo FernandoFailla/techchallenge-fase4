@@ -1,0 +1,9 @@
+seed: 42
+train_fraction: 0.60
+validation_fraction: 0.15
+test_fraction: 0.15
+simulation_fraction: 0.10
+experiment_name: credit-training-e4
+model_version: real-logistic-v1
+data_dir: data
+runtime_dir: artifacts/runtime

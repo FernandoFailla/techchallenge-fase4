@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from credit_monitoring.config import load_demo_config
+from credit_monitoring.config import load_demo_config, load_training_config
 
 
 def write_config(path: Path, *, extra: str = "", omit: str = "") -> None:
@@ -42,3 +42,30 @@ def test_config_rejects_missing_fields(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="missing configuration fields: seed"):
         load_demo_config(path)
+
+
+def test_load_training_config() -> None:
+    config = load_training_config("configs/training.yaml")
+
+    assert config.train_fraction == 0.6
+    assert config.model_version == "real-logistic-v1"
+
+
+def test_training_config_rejects_fractions_that_do_not_sum_to_one(tmp_path: Path) -> None:
+    path = tmp_path / "training.yaml"
+    path.write_text(
+        """seed: 42
+train_fraction: 0.60
+validation_fraction: 0.20
+test_fraction: 0.15
+simulation_fraction: 0.10
+experiment_name: credit-training-e4
+model_version: real-logistic-v1
+data_dir: data
+runtime_dir: artifacts/runtime
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="partition fractions must sum to 1"):
+        load_training_config(path)
