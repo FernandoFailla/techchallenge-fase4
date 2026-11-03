@@ -9,7 +9,7 @@ from zipfile import ZipFile
 
 import polars as pl
 
-from credit_monitoring.contracts import ID_COLUMN, TARGET_COLUMN
+from credit_monitoring.contracts import ID_COLUMN, MODEL_FEATURE_COLUMNS, TARGET_COLUMN
 
 UCI_SOURCE_URL = "https://archive.ics.uci.edu/static/public/350/default+of+credit+card+clients.zip"
 UCI_ARCHIVE_SHA256 = "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602"
@@ -31,15 +31,6 @@ RAW_COLUMNS = (
     *BILL_COLUMNS,
     *PAYMENT_COLUMNS,
     TARGET_COLUMN,
-)
-MODEL_FEATURE_COLUMNS = (
-    "LIMIT_BAL",
-    "PAY_0",
-    "MAX_DELAY_6M",
-    "DELAY_MONTHS_6M",
-    "UTILIZATION_CURRENT",
-    "UTILIZATION_MEAN_6M",
-    "PAYMENT_TO_BILL_RATIO_6M",
 )
 AUDIT_COLUMNS = ("SEX", "EDUCATION", "MARRIAGE", "AGE", "AGE_GROUP")
 PARTITIONS = ("train", "validation", "test", "simulation")

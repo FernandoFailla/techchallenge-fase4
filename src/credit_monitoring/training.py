@@ -17,8 +17,12 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from credit_monitoring.contracts import ID_COLUMN, TARGET_COLUMN
-from credit_monitoring.data import MODEL_FEATURE_COLUMNS
+from credit_monitoring.contracts import (
+    ID_COLUMN,
+    MODEL_FEATURE_COLUMNS,
+    TARGET_COLUMN,
+    validate_model_scoring_batch,
+)
 
 
 @dataclass(frozen=True)
@@ -109,23 +113,22 @@ def fit_credit_model(
 
 def predict_credit_risk(model: CreditModel, data: pl.DataFrame) -> pl.DataFrame:
     _validate_features(data)
-    probability = model.pipeline.predict_proba(data.select(model.feature_columns).to_numpy())[:, 1]
+    validated = validate_model_scoring_batch(data.select(ID_COLUMN, *model.feature_columns))
+    probability = model.pipeline.predict_proba(validated.select(model.feature_columns).to_numpy())[
+        :, 1
+    ]
     return pl.DataFrame(
         {
-            ID_COLUMN: data.get_column(ID_COLUMN),
+            ID_COLUMN: validated.get_column(ID_COLUMN),
             "default_probability": probability,
         }
     ).with_columns((pl.col("default_probability") >= model.threshold).alias("review_required"))
 
 
-def evaluate_credit_model(model: CreditModel, data: pl.DataFrame) -> ModelMetrics:
-    _validate_labeled_data(data)
-    target = data.get_column(TARGET_COLUMN).to_numpy()
-    probability = model.pipeline.predict_proba(data.select(model.feature_columns).to_numpy())[:, 1]
-    prediction = probability >= model.threshold
+def _build_model_metrics(target: object, probability: object, prediction: object) -> ModelMetrics:
     false_positive_rate, true_positive_rate, _ = roc_curve(target, probability)
     return ModelMetrics(
-        rows=data.height,
+        rows=len(target),
         events=int(target.sum()),
         event_rate=float(target.mean()),
         roc_auc=float(roc_auc_score(target, probability)),
@@ -136,4 +139,33 @@ def evaluate_credit_model(model: CreditModel, data: pl.DataFrame) -> ModelMetric
         precision=float(precision_score(target, prediction, zero_division=0)),
         recall=float(recall_score(target, prediction, zero_division=0)),
         review_rate=float(prediction.mean()),
+    )
+
+
+def evaluate_credit_model(model: CreditModel, data: pl.DataFrame) -> ModelMetrics:
+    _validate_labeled_data(data)
+    target = data.get_column(TARGET_COLUMN).to_numpy()
+    probability = model.pipeline.predict_proba(data.select(model.feature_columns).to_numpy())[:, 1]
+    prediction = probability >= model.threshold
+    return _build_model_metrics(target, probability, prediction)
+
+
+def evaluate_scored_predictions(data: pl.DataFrame) -> ModelMetrics:
+    required = {ID_COLUMN, TARGET_COLUMN, "default_probability", "review_required"}
+    missing = sorted(required - set(data.columns))
+    if missing:
+        raise ValueError(f"missing prediction columns: {', '.join(missing)}")
+    if data.height == 0 or data.get_column(ID_COLUMN).n_unique() != data.height:
+        raise ValueError("scored predictions must contain unique rows")
+    if data.select(*required).null_count().sum_horizontal().item() != 0:
+        raise ValueError("scored predictions must not contain null values")
+    if not data.get_column("default_probability").is_between(0, 1).all():
+        raise ValueError("default_probability must be between 0 and 1")
+    if set(data.get_column(TARGET_COLUMN).unique()) != {0, 1}:
+        raise ValueError("prediction target must contain both binary classes")
+
+    return _build_model_metrics(
+        data.get_column(TARGET_COLUMN).to_numpy(),
+        data.get_column("default_probability").to_numpy(),
+        data.get_column("review_required").to_numpy(),
     )

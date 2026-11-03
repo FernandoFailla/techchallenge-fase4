@@ -1,16 +1,34 @@
-"""Deterministic synthetic data for the vertical slice."""
+"""Deterministic synthetic data and post-freeze drift scenarios."""
 
+from dataclasses import dataclass
+from datetime import datetime
 from random import Random
 
+import numpy as np
 import polars as pl
 
 from credit_monitoring.contracts import (
     FEATURE_COLUMNS,
     ID_COLUMN,
+    MODEL_FEATURE_COLUMNS,
     TARGET_COLUMN,
     validate_historical_data,
+    validate_model_scoring_batch,
+    validate_outcome_feed,
     validate_scoring_batch,
 )
+from credit_monitoring.data import AUDIT_COLUMNS
+from credit_monitoring.training import CreditModel, predict_credit_risk
+
+MONTH_COLUMN = "month"
+SCENARIO_COLUMN = "scenario"
+SCENARIOS = {"M1": "stable", "M2": "data_drift", "M3": "concept_drift"}
+
+
+@dataclass(frozen=True)
+class ConceptDriftSimulation:
+    evidence: pl.DataFrame
+    outcomes: pl.DataFrame
 
 
 def generate_historical_data(rows: int, *, seed: int, id_start: int = 1) -> pl.DataFrame:
@@ -124,3 +142,149 @@ def corrupt_scoring_batch(data: pl.DataFrame) -> pl.DataFrame:
         )
         .drop("_row")
     )
+
+
+def build_drift_cohorts(
+    pool: pl.DataFrame,
+    *,
+    seed: int,
+    rows_per_month: int,
+    stress_strength: float,
+) -> pl.DataFrame:
+    required = {ID_COLUMN, *MODEL_FEATURE_COLUMNS}
+    missing = sorted(required - set(pool.columns))
+    if missing:
+        raise ValueError(f"missing simulation columns: {', '.join(missing)}")
+    if pool.get_column(ID_COLUMN).n_unique() != pool.height:
+        raise ValueError("simulation pool identifiers must be unique")
+    if rows_per_month < 100:
+        raise ValueError("rows_per_month must be at least 100")
+    selection_candidates = pool.height - 2 * rows_per_month
+    if selection_candidates < rows_per_month + max(1, rows_per_month // 2):
+        raise ValueError("simulation pool needs a selection reserve for the drift cohort")
+    if not np.isfinite(stress_strength) or stress_strength <= 0:
+        raise ValueError("stress_strength must be greater than zero")
+
+    ordered = pool.sort(ID_COLUMN)
+    validate_model_scoring_batch(ordered.select(ID_COLUMN, *MODEL_FEATURE_COLUMNS))
+    random = np.random.default_rng(seed)
+    ranked = (
+        ordered.lazy()
+        .with_columns(
+            (1 - (pl.col("LIMIT_BAL").rank("average") - 1) / (pl.len() - 1)).alias(
+                "_LOW_LIMIT_RANK"
+            ),
+            ((pl.col("MAX_DELAY_6M").rank("average") - 1) / (pl.len() - 1)).alias("_DELAY_RANK"),
+            ((pl.col("UTILIZATION_CURRENT").rank("average") - 1) / (pl.len() - 1)).alias(
+                "_UTILIZATION_RANK"
+            ),
+            pl.Series("_SELECTION_DRAW", random.random(ordered.height)),
+            pl.Series("_SPLIT_DRAW", random.random(ordered.height)),
+        )
+        .with_columns(
+            (
+                0.4 * pl.col("_LOW_LIMIT_RANK")
+                + 0.4 * pl.col("_DELAY_RANK")
+                + 0.2 * pl.col("_UTILIZATION_RANK")
+            ).alias("_STRESS_SCORE")
+        )
+        .with_columns(
+            (
+                -pl.col("_SELECTION_DRAW").log() / (stress_strength * pl.col("_STRESS_SCORE")).exp()
+            ).alias("_SELECTION_PRIORITY")
+        )
+        .collect()
+    )
+    stable_candidates = ranked.sort("_SPLIT_DRAW")
+    m1_ids = stable_candidates.head(rows_per_month).select(ID_COLUMN)
+    m3_ids = stable_candidates.slice(rows_per_month, rows_per_month).select(ID_COLUMN)
+    stable_ids = pl.concat((m1_ids, m3_ids))
+    m2_ids = (
+        ranked.join(stable_ids, on=ID_COLUMN, how="anti")
+        .sort("_SELECTION_PRIORITY")
+        .head(rows_per_month)
+        .select(ID_COLUMN)
+    )
+    month_ids = {
+        "M1": m1_ids,
+        "M2": m2_ids,
+        "M3": m3_ids,
+    }
+    audit_columns = tuple(column for column in AUDIT_COLUMNS if column in ordered.columns)
+    cohorts = []
+    for month, identifiers in month_ids.items():
+        cohort = (
+            ordered.join(identifiers, on=ID_COLUMN, how="semi")
+            .select(ID_COLUMN, *MODEL_FEATURE_COLUMNS, *audit_columns)
+            .with_columns(
+                pl.lit(month).alias(MONTH_COLUMN),
+                pl.lit(SCENARIOS[month]).alias(SCENARIO_COLUMN),
+            )
+        )
+        cohorts.append(cohort)
+
+    result = pl.concat(cohorts).sort(MONTH_COLUMN, ID_COLUMN)
+    if result.get_column(ID_COLUMN).n_unique() != result.height:
+        raise AssertionError("generated cohorts are not disjoint")
+    return result
+
+
+def simulate_concept_drift(
+    model: CreditModel,
+    data: pl.DataFrame,
+    *,
+    delta: float,
+    seed: int,
+    available_at: datetime,
+) -> ConceptDriftSimulation:
+    if not np.isfinite(delta) or delta <= 0:
+        raise ValueError("delta must be greater than zero")
+
+    scoring_data = validate_model_scoring_batch(
+        data.select(ID_COLUMN, *MODEL_FEATURE_COLUMNS).sort(ID_COLUMN)
+    )
+    scores = predict_credit_risk(model, scoring_data)
+    random = np.random.default_rng(seed)
+    evidence = (
+        scoring_data.join(scores, on=ID_COLUMN, how="inner", validate="1:1")
+        .lazy()
+        .with_columns(
+            (
+                0.6 * pl.col("UTILIZATION_CURRENT").clip(0, 2) / 2
+                + 0.4 * pl.col("MAX_DELAY_6M").clip(0, 8) / 8
+            ).alias("vulnerability"),
+            pl.Series("shared_uniform", random.random(scoring_data.height)),
+        )
+        .with_columns(
+            pl.col("default_probability").alias("p0"),
+            pl.col("default_probability").clip(1e-9, 1 - 1e-9).alias("_P0_CLIPPED"),
+        )
+        .with_columns(
+            (
+                1
+                / (
+                    1
+                    + (
+                        -(
+                            (pl.col("_P0_CLIPPED") / (1 - pl.col("_P0_CLIPPED"))).log()
+                            + delta * pl.col("vulnerability")
+                        )
+                    ).exp()
+                )
+            ).alias("p1")
+        )
+        .with_columns(
+            (pl.col("shared_uniform") < pl.col("p0")).cast(pl.Int64).alias("y0"),
+            (pl.col("shared_uniform") < pl.col("p1")).cast(pl.Int64).alias("y1"),
+        )
+        .select(ID_COLUMN, "p0", "p1", "vulnerability", "shared_uniform", "y0", "y1")
+        .collect()
+    )
+    outcomes = validate_outcome_feed(
+        evidence.select(
+            pl.col(ID_COLUMN),
+            pl.col("y1").alias(TARGET_COLUMN),
+            pl.lit(available_at).alias("available_at"),
+        )
+    )
+    return ConceptDriftSimulation(evidence=evidence, outcomes=outcomes)

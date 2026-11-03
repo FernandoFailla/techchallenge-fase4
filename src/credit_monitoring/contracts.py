@@ -1,4 +1,4 @@
-"""Pandera contracts for historical and scoring data."""
+"""Pandera contracts for historical, scoring, and outcome data."""
 
 from dataclasses import dataclass
 
@@ -9,6 +9,15 @@ from pandera.errors import SchemaErrors
 ID_COLUMN = "ID"
 TARGET_COLUMN = "default_payment_next_month"
 FEATURE_COLUMNS = ("LIMIT_BAL", "AGE", "PAY_0", "BILL_AMT1", "PAY_AMT1")
+MODEL_FEATURE_COLUMNS = (
+    "LIMIT_BAL",
+    "PAY_0",
+    "MAX_DELAY_6M",
+    "DELAY_MONTHS_6M",
+    "UTILIZATION_CURRENT",
+    "UTILIZATION_MEAN_6M",
+    "PAYMENT_TO_BILL_RATIO_6M",
+)
 
 
 def _base_columns() -> dict[str, pa.Column]:
@@ -43,6 +52,59 @@ HISTORICAL_SCHEMA = pa.DataFrameSchema(
     ordered=True,
     coerce=False,
     name="historical_v1",
+)
+
+MODEL_SCORING_SCHEMA = pa.DataFrameSchema(
+    {
+        ID_COLUMN: pa.Column(pl.Int64, nullable=False, unique=True),
+        "LIMIT_BAL": pa.Column(pl.Float64, checks=pa.Check.gt(0), nullable=False),
+        "PAY_0": pa.Column(pl.Int64, checks=pa.Check.in_range(-2, 8), nullable=False),
+        "MAX_DELAY_6M": pa.Column(
+            pl.Int64,
+            checks=pa.Check.in_range(-2, 8),
+            nullable=False,
+        ),
+        "DELAY_MONTHS_6M": pa.Column(
+            pl.Int64,
+            checks=pa.Check.in_range(0, 6),
+            nullable=False,
+        ),
+        "UTILIZATION_CURRENT": pa.Column(
+            pl.Float64,
+            checks=pa.Check.in_range(-1, 2),
+            nullable=False,
+        ),
+        "UTILIZATION_MEAN_6M": pa.Column(
+            pl.Float64,
+            checks=pa.Check.in_range(-1, 2),
+            nullable=False,
+        ),
+        "PAYMENT_TO_BILL_RATIO_6M": pa.Column(
+            pl.Float64,
+            checks=pa.Check.in_range(0, 5),
+            nullable=False,
+        ),
+    },
+    strict=True,
+    ordered=True,
+    coerce=False,
+    name="model_scoring_v1",
+)
+
+OUTCOME_SCHEMA = pa.DataFrameSchema(
+    {
+        ID_COLUMN: pa.Column(pl.Int64, nullable=False, unique=True),
+        TARGET_COLUMN: pa.Column(
+            pl.Int64,
+            checks=pa.Check.isin([0, 1]),
+            nullable=False,
+        ),
+        "available_at": pa.Column(pl.Datetime, nullable=False),
+    },
+    strict=True,
+    ordered=True,
+    coerce=False,
+    name="outcome_v1",
 )
 
 
@@ -88,3 +150,11 @@ def validate_scoring_batch(data: pl.DataFrame) -> pl.DataFrame:
 
 def validate_historical_data(data: pl.DataFrame) -> pl.DataFrame:
     return _validate(data, HISTORICAL_SCHEMA)
+
+
+def validate_model_scoring_batch(data: pl.DataFrame) -> pl.DataFrame:
+    return _validate(data, MODEL_SCORING_SCHEMA)
+
+
+def validate_outcome_feed(data: pl.DataFrame) -> pl.DataFrame:
+    return _validate(data, OUTCOME_SCHEMA)

@@ -1,6 +1,7 @@
 import polars as pl
+import pytest
 
-from credit_monitoring.contracts import ID_COLUMN, TARGET_COLUMN
+from credit_monitoring.contracts import ID_COLUMN, TARGET_COLUMN, BatchContractError
 from credit_monitoring.data import MODEL_FEATURE_COLUMNS
 from credit_monitoring.training import (
     evaluate_credit_model,
@@ -66,3 +67,19 @@ def test_validation_labels_do_not_change_fitted_coefficients() -> None:
     first_coefficients = first.pipeline.named_steps["classifier"].coef_.tolist()
     second_coefficients = second.pipeline.named_steps["classifier"].coef_.tolist()
     assert first_coefficients == second_coefficients
+
+
+def test_real_scoring_contract_blocks_out_of_range_features() -> None:
+    data = modeling_fixture()
+    model = fit_credit_model(
+        data.head(350),
+        data.slice(350, 125),
+        seed=42,
+        model_version="test-v1",
+    )
+    invalid = (
+        data.tail(125).drop(TARGET_COLUMN).with_columns(pl.lit(3.0).alias("UTILIZATION_CURRENT"))
+    )
+
+    with pytest.raises(BatchContractError):
+        predict_credit_risk(model, invalid)

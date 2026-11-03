@@ -1,0 +1,14 @@
+seed: 48
+cohort_rows: 750
+stress_strength: 3.0
+concept_delta: 2.0
+psi_bins: 10
+psi_smoothing: 0.5
+psi_minimum_rows: 100
+bootstrap_samples: 300
+experiment_name: credit-drift-e5
+expected_model_version: real-logistic-v1
+data_path: data/processed/credit-modeling.parquet
+model_path: artifacts/runtime/training-e4/credit-model.pkl
+runtime_dir: artifacts/runtime
+outcome_available_at: "2026-04-01T00:00:00"

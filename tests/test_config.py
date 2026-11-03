@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from credit_monitoring.config import load_demo_config, load_training_config
+from credit_monitoring.config import load_demo_config, load_drift_config, load_training_config
 
 
 def write_config(path: Path, *, extra: str = "", omit: str = "") -> None:
@@ -69,3 +69,24 @@ runtime_dir: artifacts/runtime
 
     with pytest.raises(ValueError, match="partition fractions must sum to 1"):
         load_training_config(path)
+
+
+def test_load_drift_config() -> None:
+    config = load_drift_config("configs/e5-drift.yaml")
+
+    assert config.cohort_rows == 750
+    assert config.stress_strength == 3.0
+    assert config.outcome_available_at.isoformat() == "2026-04-01T00:00:00"
+
+
+def test_drift_config_rejects_non_finite_values(tmp_path: Path) -> None:
+    path = tmp_path / "drift.yaml"
+    path.write_text(
+        Path("configs/e5-drift.yaml")
+        .read_text(encoding="utf-8")
+        .replace("stress_strength: 3.0", "stress_strength: .nan"),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="stress_strength must be finite"):
+        load_drift_config(path)

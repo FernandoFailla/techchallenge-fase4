@@ -1,6 +1,8 @@
 """Strict YAML configuration for deterministic workflows."""
 
+import math
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +31,23 @@ TRAINING_EXPECTED_FIELDS = {
     "runtime_dir",
 }
 
+DRIFT_EXPECTED_FIELDS = {
+    "seed",
+    "cohort_rows",
+    "stress_strength",
+    "concept_delta",
+    "psi_bins",
+    "psi_smoothing",
+    "psi_minimum_rows",
+    "bootstrap_samples",
+    "experiment_name",
+    "expected_model_version",
+    "data_path",
+    "model_path",
+    "runtime_dir",
+    "outcome_available_at",
+}
+
 
 @dataclass(frozen=True)
 class DemoConfig:
@@ -55,6 +74,24 @@ class TrainingConfig:
     runtime_dir: Path
 
 
+@dataclass(frozen=True)
+class DriftConfig:
+    seed: int
+    cohort_rows: int
+    stress_strength: float
+    concept_delta: float
+    psi_bins: int
+    psi_smoothing: float
+    psi_minimum_rows: int
+    bootstrap_samples: int
+    experiment_name: str
+    expected_model_version: str
+    data_path: Path
+    model_path: Path
+    runtime_dir: Path
+    outcome_available_at: datetime
+
+
 def _require_integer(payload: dict[str, Any], field: str, *, minimum: int) -> int:
     value = payload[field]
     if type(value) is not int or value < minimum:
@@ -66,7 +103,10 @@ def _require_float(payload: dict[str, Any], field: str) -> float:
     value = payload[field]
     if type(value) not in {int, float}:
         raise ValueError(f"{field} must be numeric")
-    return float(value)
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{field} must be finite")
+    return result
 
 
 def load_demo_config(path: str | Path) -> DemoConfig:
@@ -157,4 +197,64 @@ def load_training_config(path: str | Path) -> TrainingConfig:
         model_version=payload["model_version"],
         data_dir=Path(payload["data_dir"]),
         runtime_dir=Path(payload["runtime_dir"]),
+    )
+
+
+def load_drift_config(path: str | Path) -> DriftConfig:
+    config_path = Path(path)
+    payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("configuration must be a YAML mapping")
+
+    fields = set(payload)
+    missing = sorted(DRIFT_EXPECTED_FIELDS - fields)
+    unknown = sorted(fields - DRIFT_EXPECTED_FIELDS)
+    if missing:
+        raise ValueError(f"missing configuration fields: {', '.join(missing)}")
+    if unknown:
+        raise ValueError(f"unknown configuration fields: {', '.join(unknown)}")
+
+    cohort_rows = _require_integer(payload, "cohort_rows", minimum=100)
+    psi_bins = _require_integer(payload, "psi_bins", minimum=2)
+    psi_minimum_rows = _require_integer(payload, "psi_minimum_rows", minimum=50)
+    bootstrap_samples = _require_integer(payload, "bootstrap_samples", minimum=50)
+    stress_strength = _require_float(payload, "stress_strength")
+    concept_delta = _require_float(payload, "concept_delta")
+    psi_smoothing = _require_float(payload, "psi_smoothing")
+    if stress_strength <= 0 or concept_delta <= 0 or psi_smoothing <= 0:
+        raise ValueError("drift strengths and PSI smoothing must be greater than zero")
+
+    string_fields = (
+        "experiment_name",
+        "expected_model_version",
+        "data_path",
+        "model_path",
+        "runtime_dir",
+        "outcome_available_at",
+    )
+    for field in string_fields:
+        if not isinstance(payload[field], str) or not payload[field].strip():
+            raise ValueError(f"{field} must be a non-empty string")
+    try:
+        outcome_available_at = datetime.fromisoformat(payload["outcome_available_at"])
+    except ValueError as error:
+        raise ValueError("outcome_available_at must be an ISO-8601 datetime") from error
+    if outcome_available_at.tzinfo is not None:
+        raise ValueError("outcome_available_at must use naive UTC")
+
+    return DriftConfig(
+        seed=_require_integer(payload, "seed", minimum=0),
+        cohort_rows=cohort_rows,
+        stress_strength=stress_strength,
+        concept_delta=concept_delta,
+        psi_bins=psi_bins,
+        psi_smoothing=psi_smoothing,
+        psi_minimum_rows=psi_minimum_rows,
+        bootstrap_samples=bootstrap_samples,
+        experiment_name=payload["experiment_name"],
+        expected_model_version=payload["expected_model_version"],
+        data_path=Path(payload["data_path"]),
+        model_path=Path(payload["model_path"]),
+        runtime_dir=Path(payload["runtime_dir"]),
+        outcome_available_at=outcome_available_at,
     )
