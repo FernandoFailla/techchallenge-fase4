@@ -32,8 +32,10 @@ make check
 | `make prepare-data` | Baixar, verificar e particionar o dataset UCI |
 | `make train-real` | Treinar e registrar o baseline com dados reais preparados |
 | `make e4` | Executar preparação e treino da entrega E4 |
+| `make e5` | Executar as três safras, maturar M3 e registrar drift no MLflow |
 | `make notebook` | Abrir a EDA de drift sintético no Marimo |
 | `make notebook-real` | Abrir a EDA do dataset UCI no Marimo |
+| `make notebook-drift` | Abrir a investigação das safras E5 no Marimo |
 | `make mlflow-ui` | Abrir o MLflow local em `http://127.0.0.1:5000` |
 
 ## Demonstração D4
@@ -80,3 +82,33 @@ Resultados verificados no teste/referência:
 
 Fonte, perfil, tratamentos e manifesto das partições estão documentados em
 [`docs/data-source.md`](docs/data-source.md).
+
+## Safras e drift
+
+```bash
+make e5
+make notebook-drift
+make mlflow-ui
+```
+
+A E5 usa 2.250 registros do pool pós-congelamento para criar M1, M2 e M3 com
+750 IDs disjuntos por mês. M1 e M3 são reservados aleatoriamente primeiro. M2
+altera somente a seleção do restante: uma corrida exponencial ponderada aumenta a
+participação de baixo limite, atraso e utilização, sem editar valores individuais.
+
+No scoring, o Evidently e o PSI usam o teste como referência. M2 termina em
+`PROCESSED_WITH_ALERTS`, com as sete features sinalizadas pelo Evidently, quatro
+PSI acima de 0,10 e PSI do score igual a 0,2573. M1 e M3 têm somente PSI
+informativo e terminam em `PROCESSED`.
+
+Após a maturação de M3, o feed separado é associado um-para-um aos scores. O
+simulador compara `p0(X)` com
+`p1(X) = sigmoid(logit(p0(X)) + 2 * g(X))` usando o mesmo sorteio para `Y0` e
+`Y1`. A probabilidade média sobe de 0,2163 para 0,2727, 55 desfechos pareados
+mudam e o Brier do modelo congelado piora de 0,1594 para 0,1904. O intervalo
+bootstrap da diferença, `[0,0212; 0,0415]`, aciona o alerta de desempenho.
+
+O contraste demonstra apenas o mecanismo programado no simulador; não estima um
+efeito causal econômico real. Relatórios agregados e logs ficam em
+`artifacts/runtime/drift-e5/`; o run verificado é
+`6de5c6ace45a4c8fadef55f173f97a78`.

@@ -15,7 +15,7 @@
 | E2: contrato e scoring mínimo | Pipeline logística simples, schema de scoring e rejeição controlada | Lote válido gera scores; lote inválido termina `REJECTED` com zero scores | Concluída |
 | E3: observabilidade D4 | Simulação determinística em duas entradas, relatório Evidently e run MLflow | `make demo` produz artefato de modelo, relatório e run local sem dados individuais em logs | Concluída |
 | E4: dados e scorecard | Download reproduzível, EDA, partições sem leakage e scorecard opcional | Decisões da EDA registradas; modelo e limites versionados | Concluída |
-| E5: safras e drift | M1 estável, M2 com data drift e M3 com concept drift maturado | Alertas e métricas correspondem aos mecanismos configurados | Pendente |
+| E5: safras e drift | M1 estável, M2 com data drift e M3 com concept drift maturado | Alertas e métricas correspondem aos mecanismos configurados | Concluída |
 | E6: fairness, governança e entrega | Auditoria agregada, documentação final, demo limpa e roteiro STAR | Rastreabilidade aponta para evidências existentes | Pendente |
 
 ### Cadência de execução
