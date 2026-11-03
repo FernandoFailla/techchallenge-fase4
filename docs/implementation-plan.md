@@ -12,8 +12,8 @@
 |---|---|---|---|
 | E0: baseline de planejamento | Repositório local, ADRs, planos e mapa visual em commits semânticos | Histórico Git revisável e tutorial cronológico renderizável | Concluída |
 | E1: bootstrap técnico | Projeto uv, pacote `src/`, Makefile, README, lint, testes e CI mínima | `uv sync` e `make check` passam em ambiente limpo | Concluída |
-| E2: contrato e scoring mínimo | Pipeline logística simples, schema de scoring e rejeição controlada | Lote válido gera scores; lote inválido termina `REJECTED` com zero scores | Em andamento |
-| E3: observabilidade D4 | Simulação determinística em duas entradas, relatório Evidently e run MLflow | `make demo` produz artefato de modelo, relatório e run local sem dados individuais em logs | Pendente |
+| E2: contrato e scoring mínimo | Pipeline logística simples, schema de scoring e rejeição controlada | Lote válido gera scores; lote inválido termina `REJECTED` com zero scores | Concluída |
+| E3: observabilidade D4 | Simulação determinística em duas entradas, relatório Evidently e run MLflow | `make demo` produz artefato de modelo, relatório e run local sem dados individuais em logs | Em andamento |
 | E4: dados e scorecard | Download reproduzível, EDA, partições sem leakage e scorecard opcional | Decisões da EDA registradas; modelo e limites versionados | Pendente |
 | E5: safras e drift | M1 estável, M2 com data drift e M3 com concept drift maturado | Alertas e métricas correspondem aos mecanismos configurados | Pendente |
 | E6: fairness, governança e entrega | Auditoria agregada, documentação final, demo limpa e roteiro STAR | Rastreabilidade aponta para evidências existentes | Pendente |
