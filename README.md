@@ -26,4 +26,21 @@ make check
 | `make setup` | Sincronizar o ambiente a partir do lockfile |
 | `make lint` | Verificar lint e formatação |
 | `make test` | Executar a suíte rápida |
-| `make check` | Executar todas as verificações locais e da CI |
+| `make notebook-check` | Validar estaticamente o notebook Marimo |
+| `make check` | Executar lint, testes e validação do notebook |
+| `make demo` | Executar a fatia vertical D4 e registrar um run MLflow local |
+| `make notebook` | Abrir a EDA de drift sintético no Marimo |
+| `make mlflow-ui` | Abrir o MLflow local em `http://127.0.0.1:5000` |
+
+## Demonstração D4
+
+```bash
+make demo
+make mlflow-ui
+```
+
+A demonstração treina a regressão logística, processa um lote válido com drift,
+bloqueia um lote inválido antes da inferência e gera um relatório Evidently. Os
+artefatos agregados ficam em `artifacts/runtime/d4-demo/`; metadados e artefatos
+do run ficam no store local sob `artifacts/runtime/`. Nenhum dado em nível de
+cliente é persistido nos logs ou no MLflow.

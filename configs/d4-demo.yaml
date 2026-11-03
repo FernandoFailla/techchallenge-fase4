@@ -1,0 +1,8 @@
+seed: 42
+training_rows: 500
+scoring_rows: 200
+review_threshold: 0.45
+limit_balance_multiplier: 0.65
+age_shift: 8
+experiment_name: credit-monitoring-d4
+runtime_dir: artifacts/runtime
