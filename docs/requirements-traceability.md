@@ -2,9 +2,9 @@
 
 | Requisito do enunciado | Decisão do projeto | Evidência planejada |
 |---|---|---|
-| Classificador base de crédito | Preferência por scorecard WOE; fallback oficial para Pipeline logística simples | Métricas de teste e artefato efetivamente entregue no MLflow; tabela de pontos somente se WOE estiver ativo |
-| Dataset binário com pelo menos 5.000 amostras | UCI Default of Credit Card Clients, 30.000 registros | Fonte, licença, checksum e perfil do dataset |
-| Separar referência e produção | Treino, validação, teste/referência e pool sintético disjuntos | Manifesto das partições, sementes e testes contra leakage |
+| Classificador base de crédito | Pipeline logística simples `real-logistic-v1`; WOE permanece inativo | Métricas e artefatos do run MLflow `8f0ae13d86ae43bd9615c563b87d48db` |
+| Dataset binário com pelo menos 5.000 amostras | UCI Default of Credit Card Clients, 30.000 registros | Fonte, licença, checksum e perfil em `docs/data-source.md` |
+| Separar referência e produção | Treino, validação, teste/referência e pool sintético disjuntos | Manifesto 60/15/15/10, semente 42 e testes contra leakage |
 | Pelo menos três regras rígidas | Pandera com esquema, nulos, unicidade, ranges e alvo | Testes do contrato e relatório de validação |
 | Lote inválido bloqueado | Status `REJECTED`, quarentena e zero scores | Run do MLflow e log da demonstração do lote corrompido |
 | Alterar ao menos duas variáveis | Mudança de composição sobre duas entradas retidas e influentes no modelo | Configuração da simulação, importância e comparações de distribuição |

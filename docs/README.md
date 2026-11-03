@@ -7,6 +7,7 @@
 - [Arquitetura](architecture.md)
 - [Plano de implementação](implementation-plan.md)
 - [Rastreabilidade dos requisitos](requirements-traceability.md)
+- [Fonte de dados, EDA e baseline real](data-source.md)
 - [Glossário](glossary.md)
 
 ## Governança e análise
