@@ -1,15 +1,15 @@
-# ADR 0013: Manter CI pequena e determinística
+# ADR 0013: Planejar CI pequena e determinística
 
-- Status: aceito
+- Status: proposto, não implementado
 - Data: 2026-10-23
 
 ## Contexto
 
-Uma GitHub Action fornece evidência de qualidade no repositório, mas baixar o dataset, resolver o scorecard e gerar todos os relatórios em cada push tornaria a CI lenta e dependente de serviços externos.
+Uma futura GitHub Action poderá fornecer evidência de qualidade no repositório, mas baixar o dataset e gerar todos os relatórios em cada push tornaria a CI lenta e dependente de serviços externos. Hoje o repositório possui somente o gate local `make check`.
 
 ## Decisão
 
-A CI executará somente lint e testes rápidos com fixtures locais pequenas. A demonstração completa continuará disponível por `make demo` e será executada localmente.
+Se implementada, a CI executará somente lint e testes rápidos com fixtures locais pequenas. A demonstração completa continuará disponível por `make demo` e será executada localmente.
 
 Os testes mínimos cobrirão:
 
@@ -28,6 +28,6 @@ Os testes mínimos cobrirão:
 
 ## Consequências
 
-- A CI não dependerá da UCI, de servidor MLflow nem de navegador.
+- A CI proposta não dependerá da UCI, de servidor MLflow nem de navegador.
 - Artefatos completos serão verificados por uma checklist de entrega e não a cada commit.
 - `pytest` será o executor de testes e `ruff` cuidará de lint e formatação.

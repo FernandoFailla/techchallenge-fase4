@@ -1,0 +1,58 @@
+{
+  "analyses": {
+    "AGE_AUDIT_GROUP": {
+      "disparity_review_threshold": 0.1,
+      "equalized_odds_ci_lower": 0.06623439391282411,
+      "equalized_odds_ci_upper": 0.27655595736581656,
+      "equalized_odds_difference": 0.1343738104301485,
+      "evidence_sufficient": true,
+      "investigation_required": false,
+      "published_group_count": 3,
+      "recommendation": "retain monitoring; no automatic mitigation or threshold change",
+      "sensitive_feature": "AGE_AUDIT_GROUP",
+      "suppressed_group_count": 0
+    },
+    "SEX_AUDIT_GROUP": {
+      "disparity_review_threshold": 0.1,
+      "equalized_odds_ci_lower": 0.009203716152644268,
+      "equalized_odds_ci_upper": 0.15563519344693916,
+      "equalized_odds_difference": 0.04578366123016164,
+      "evidence_sufficient": true,
+      "investigation_required": false,
+      "published_group_count": 2,
+      "recommendation": "retain monitoring; no automatic mitigation or threshold change",
+      "sensitive_feature": "SEX_AUDIT_GROUP",
+      "suppressed_group_count": 0
+    }
+  },
+  "fairness_state": "MONITORING_CONTINUES",
+  "model_version": "real-logistic-v1",
+  "outcome_state": "MATURED",
+  "playbook": {
+    "assessment_scope": "group error-rate comparison on synthetic matured M3 outcomes",
+    "automatic_mitigation": false,
+    "automatic_retraining": false,
+    "checks": {
+      "common_threshold_across_groups": true,
+      "demographics_excluded_from_model": true,
+      "no_groups_suppressed": true
+    },
+    "label_source": "simulate_concept_drift synthetic_p1",
+    "recommendation": "retain monitoring; collect real temporal outcomes before policy changes",
+    "state": "MONITORING_CONTINUES"
+  },
+  "process_health": {
+    "cpu_count": 16,
+    "max_rss_mb": 370.60546875,
+    "platform": "linux",
+    "python_version": "3.12.3"
+  },
+  "row_level_data_persisted": false,
+  "rows": 750,
+  "run_id": "f91fcd84608f4afd8bd5c4da26a05621",
+  "source_provenance": {
+    "revision": "367aa922f86eb4363e53d82f721346934f008784",
+    "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
+    "worktree_dirty": true
+  }
+}

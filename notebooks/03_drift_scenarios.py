@@ -177,9 +177,10 @@ def _(mo):
     ## Resposta sobre Data Drift
 
     M1 e M3 não acionam alerta de distribuição. M2 aciona o estado
-    `PROCESSED_WITH_ALERTS`: a seleção altera `P(X)` em múltiplas features e em duas
-    delas o PSI cruza `0,10`. Como as linhas são apenas selecionadas do pool OOT,
-    essa evidência não depende de valores artificiais editados.
+    `PROCESSED_WITH_ALERTS`: a seleção altera `P(X)` em múltiplas features e quatro
+    delas têm PSI acima de `0,10` (uma relevante e três em nível de warning).
+    Como as linhas são apenas selecionadas do pool OOT, essa evidência não depende
+    de valores artificiais editados.
     """)
     return
 

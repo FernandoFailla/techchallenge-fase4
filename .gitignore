@@ -18,6 +18,7 @@ mlflow.db
 
 # Notebook and documentation build state
 .marimo/
+notebooks/__marimo__/
 .quarto/
 _site/
 tutorial/

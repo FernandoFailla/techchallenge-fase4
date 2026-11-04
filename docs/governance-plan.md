@@ -18,8 +18,11 @@ No cenário hipotético, a fintech é a controladora e define as finalidades do 
 - Logs e métricas não armazenam linhas de clientes nem atributos demográficos individuais.
 - Dados baixados e artefatos de linha permanecem fora do Git.
 - Relatórios selecionados para entrega contêm somente estatísticas agregadas.
-- Sementes, contrato, modelo e regras da simulação são versionados para auditoria.
+- Sementes, contrato e regras da simulação são versionados; runs registram hashes do dataset, modelo e árvore de código executada.
 - Um procedimento de limpeza removerá dados e artefatos locais reproduzíveis após a avaliação acadêmica.
+- A auditoria E6 mantém a visão individual restrita somente em memória e registra no MLflow contagens, métricas de erro, intervalos e decisão do playbook agregados.
+- A regra operacional suprime métricas de erro para grupos com menos de 200 registros, 30 eventos ou 30 não eventos.
+- O pickle do modelo é aceito somente como artefato local confiável gerado pela E4; produção exigiria formato e verificação de integridade aprovados antes da carga.
 
 ## Controles prescritos para produção
 
@@ -50,3 +53,4 @@ Esses prazos são uma proposta arquitetural. Obrigações regulatórias, defesa 
 - Métricas de grupo não provam ausência ou presença de discriminação causal.
 - A simulação econômica não estima o efeito real de inflação ou desemprego.
 - O projeto não implementa autenticação, autorização, criptografia ou atendimento ao titular; esses itens pertencem à camada prescrita.
+- Os desfechos M3 são sintéticos e a auditoria E6 não autoriza conclusão sobre impacto real, discriminação causal ou conformidade legal.

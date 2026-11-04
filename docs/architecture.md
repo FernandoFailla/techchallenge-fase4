@@ -1,4 +1,4 @@
-# Arquitetura planejada
+# Arquitetura implementada
 
 ## Princípios
 
@@ -68,12 +68,14 @@ stateDiagram-v2
     PROCESSED --> EVALUATION_BLOCKED: feed de desfechos rejeitado
     PROCESSED_WITH_ALERTS --> EVALUATION_BLOCKED: feed de desfechos rejeitado
     MATURED --> EVALUATED
+    EVALUATED --> FAIRNESS_EVALUATED
+    EVALUATED --> EVALUATION_BLOCKED_INSUFFICIENT_DATA
     RECEIVED --> FAILED: erro técnico
     VALIDATED --> FAILED: erro técnico
     SCORED --> FAILED: erro técnico
 ```
 
-## Estrutura candidata
+## Estrutura principal
 
 ```text
 .
@@ -87,16 +89,19 @@ stateDiagram-v2
 │   ├── data.py
 │   ├── config.py
 │   ├── contracts.py
-│   ├── scorecard.py
+│   ├── training.py
+│   ├── scoring.py
+│   ├── outcomes.py
 │   ├── simulation.py
 │   ├── monitoring.py
-│   ├── visualization.py
-│   └── pipeline.py
+│   ├── fairness.py
+│   └── __init__.py
 ├── scripts/
 │   ├── prepare_data.py
-│   ├── train.py
-│   ├── simulate.py
-│   └── monitor.py
+│   ├── train_real_model.py
+│   ├── run_d4_demo.py
+│   ├── run_e5_drift.py
+│   └── run_e6_fairness.py
 ├── tests/
 ├── docs/
 ├── data/                    # gerado e ignorado
@@ -104,4 +109,4 @@ stateDiagram-v2
 └── artifacts/evidence/      # somente agregados selecionados entram no Git
 ```
 
-A estrutura é indicativa. Módulos só serão separados quando tiverem responsabilidades realmente distintas. Notebooks não gravam artefatos; scripts chamam `src/`, enquanto carregamento e validação estrita do YAML permanecem em código testado de `src/`. Scripts controlam persistência e MLflow.
+A estrutura mostra as responsabilidades centrais; o repositório contém também módulos auxiliares de dados, treinamento, contratos e observabilidade. Notebooks não gravam artefatos; scripts chamam `src/`, enquanto carregamento e validação estrita do YAML permanecem em código testado de `src/`. Scripts controlam persistência e MLflow.

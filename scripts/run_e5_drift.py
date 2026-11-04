@@ -14,6 +14,7 @@ import polars as pl
 
 from credit_monitoring.config import load_drift_config
 from credit_monitoring.contracts import ID_COLUMN, MODEL_FEATURE_COLUMNS, TARGET_COLUMN
+from credit_monitoring.health import collect_process_health
 from credit_monitoring.monitoring import (
     analyze_model_data_drift,
     analyze_population_stability,
@@ -21,6 +22,7 @@ from credit_monitoring.monitoring import (
     default_rate_by_score_band,
 )
 from credit_monitoring.outcomes import OutcomeState, associate_mature_outcomes
+from credit_monitoring.provenance import collect_source_provenance, file_sha256
 from credit_monitoring.simulation import (
     MONTH_COLUMN,
     build_drift_cohorts,
@@ -44,6 +46,7 @@ def main() -> None:
     if not config.model_path.exists():
         raise FileNotFoundError(f"trained model not found: {config.model_path}")
 
+    model_sha256 = file_sha256(config.model_path)
     with config.model_path.open("rb") as model_file:
         model = pickle.load(model_file)
     if not isinstance(model, CreditModel):
@@ -73,11 +76,13 @@ def main() -> None:
         "data_path": str(config.data_path),
         "model_path": str(config.model_path),
         "runtime_dir": str(config.runtime_dir),
+        "scoring_at": config.scoring_at.isoformat(),
         "outcome_available_at": config.outcome_available_at.isoformat(),
     }
     config_payload = json.dumps(resolved_config, sort_keys=True, separators=(",", ":"))
     config_sha256 = hashlib.sha256(config_payload.encode()).hexdigest()
-    dataset_sha256 = hashlib.sha256(config.data_path.read_bytes()).hexdigest()
+    dataset_sha256 = file_sha256(config.data_path)
+    source = collect_source_provenance()
 
     tracking_uri = f"sqlite:///{(config.runtime_dir / 'mlflow.db').resolve()}"
     mlflow.set_tracking_uri(tracking_uri)
@@ -104,7 +109,9 @@ def main() -> None:
             events.append(
                 {
                     "timestamp": datetime.now(UTC).isoformat(),
+                    "level": "INFO",
                     "run_id": run_id,
+                    "batch_id": "e5-three-months",
                     "stage": stage,
                     "status": status,
                     "message": message,
@@ -167,6 +174,18 @@ def main() -> None:
             seed=config.seed + 101,
             available_at=config.outcome_available_at,
         )
+        premature_association = associate_mature_outcomes(
+            month_scores["M3"],
+            concept.outcomes,
+            as_of=config.scoring_at,
+        )
+        if premature_association.state is not OutcomeState.EVALUATION_BLOCKED:
+            raise RuntimeError("M3 outcomes must remain blocked at the scoring time")
+        record_event(
+            "outcomes",
+            premature_association.state,
+            "M3 evaluation blocked before the configured maturity date",
+        )
         outcome_association = associate_mature_outcomes(
             month_scores["M3"],
             concept.outcomes,
@@ -202,12 +221,20 @@ def main() -> None:
         ).to_dicts()[0]
         score_bands = default_rate_by_score_band(outcome_association.data).to_dicts()
         duration_seconds = perf_counter() - started
+        process_health = collect_process_health()
         summary = {
             "run_id": run_id,
             "model_version": model.model_version,
             "cohort_ids_disjoint": cohorts.get_column(ID_COLUMN).n_unique() == cohorts.height,
             "months": month_summaries,
             "outcome_state": outcome_association.state,
+            "outcome_timeline": {
+                "scoring_at": config.scoring_at.isoformat(),
+                "available_at": config.outcome_available_at.isoformat(),
+                "delay_days": (config.outcome_available_at - config.scoring_at).days,
+                "state_at_scoring": premature_association.state,
+                "state_at_availability": outcome_association.state,
+            },
             "concept_drift": concept_summary,
             "performance": {
                 "baseline": asdict(performance.baseline),
@@ -217,6 +244,8 @@ def main() -> None:
             },
             "default_rate_by_score_band": score_bands,
             "duration_seconds": duration_seconds,
+            "process_health": asdict(process_health),
+            "source_provenance": asdict(source),
         }
         record_event("outcomes", outcome_association.state, "M3 outcomes matured one-to-one")
         record_event("evaluation", "EVALUATED_WITH_ALERTS", "M3 concept drift evaluated")
@@ -240,7 +269,13 @@ def main() -> None:
                 "bootstrap_samples": config.bootstrap_samples,
                 "model_version": model.model_version,
                 "dataset_sha256": dataset_sha256,
+                "model_sha256": model_sha256,
                 "config_sha256": config_sha256,
+                "source_revision": source.revision,
+                "source_tree_sha256": source.tree_sha256,
+                "source_worktree_dirty": source.worktree_dirty,
+                "python_version": process_health.python_version,
+                "platform": process_health.platform,
                 "cohort_selection": "weighted_exponential_race",
                 "concept_mechanism": "sigmoid(logit(p0)+delta*g(x))",
             }
@@ -255,6 +290,8 @@ def main() -> None:
             "current_brier_score": performance.current.brier_score,
             "brier_score_difference": brier_shift.difference,
             "performance_alert_count": sum(shift.alert for shift in performance.shifts),
+            "process_cpu_count": process_health.cpu_count,
+            "process_max_rss_mb": process_health.max_rss_mb,
         }
         for month, month_summary in month_summaries.items():
             metrics[f"{month.lower()}_rows"] = month_summary["rows"]
@@ -273,10 +310,12 @@ def main() -> None:
                 "m3_scoring_state": month_summaries["M3"]["processing_state"],
                 "m3_outcome_state": outcome_association.state,
                 "model_version": model.model_version,
+                "source_worktree_dirty": source.worktree_dirty,
             }
         )
         mlflow.log_artifacts(run_output_dir, artifact_path="drift-e5")
 
+    (output_dir / "latest-run-id.txt").write_text(f"{run_id}\n", encoding="utf-8")
     print(json.dumps(summary, indent=2, sort_keys=True))
 
 

@@ -17,6 +17,7 @@
 - [Modelo causal](causal-model.md)
 - [Plano do README final](readme-outline.md)
 - [Roteiro do vídeo STAR](video-star-plan.md)
+- [Checklist da demonstração final](final-demo-checklist.md)
 
 ## Decisões arquiteturais
 
@@ -32,5 +33,5 @@
 - [ADR 0010: Limites da análise causal](adr/0010-causal-analysis-boundary.md)
 - [ADR 0011: Detecção de drift e desempenho](adr/0011-drift-and-performance-detection.md)
 - [ADR 0012: Plano LGPD em duas camadas](adr/0012-two-layer-lgpd-plan.md)
-- [ADR 0013: CI enxuta](adr/0013-lightweight-ci.md)
+- [ADR 0013: proposta de CI enxuta](adr/0013-lightweight-ci.md)
 - [ADR 0014: Features curadas do scorecard](adr/0014-curated-scorecard-features.md)

@@ -2,7 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from credit_monitoring.config import load_demo_config, load_drift_config, load_training_config
+from credit_monitoring.config import (
+    load_demo_config,
+    load_drift_config,
+    load_fairness_config,
+    load_training_config,
+)
 
 
 def write_config(path: Path, *, extra: str = "", omit: str = "") -> None:
@@ -76,6 +81,7 @@ def test_load_drift_config() -> None:
 
     assert config.cohort_rows == 750
     assert config.stress_strength == 3.0
+    assert config.scoring_at.isoformat() == "2026-03-01T00:00:00"
     assert config.outcome_available_at.isoformat() == "2026-04-01T00:00:00"
 
 
@@ -90,3 +96,24 @@ def test_drift_config_rejects_non_finite_values(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="stress_strength must be finite"):
         load_drift_config(path)
+
+
+def test_drift_config_requires_outcomes_after_scoring(tmp_path: Path) -> None:
+    path = tmp_path / "drift.yaml"
+    path.write_text(
+        Path("configs/e5-drift.yaml")
+        .read_text(encoding="utf-8")
+        .replace('scoring_at: "2026-03-01T00:00:00"', 'scoring_at: "2026-04-02T00:00:00"'),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="scoring_at must precede"):
+        load_drift_config(path)
+
+
+def test_load_fairness_config() -> None:
+    config = load_fairness_config("configs/e6-fairness.yaml")
+
+    assert config.minimum_group_rows == 200
+    assert config.minimum_group_events == 30
+    assert config.disparity_review_threshold == 0.1

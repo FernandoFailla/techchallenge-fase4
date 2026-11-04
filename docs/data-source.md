@@ -19,17 +19,19 @@ que permanece fora do Git.
 
 ## Evidências da EDA
 
-A análise executada em `notebooks/02_uci_eda.py` confirmou:
+A análise executada em `notebooks/02_uci_eda.py` usa o conjunto completo somente
+para verificações de schema, volume e qualidade sem alvo. Relações com o alvo e
+decisões de tratamento são calculadas exclusivamente na partição de treino. Ela confirmou:
 
 - 30.000 identificadores únicos e nenhum valor nulo;
-- prevalência do evento de 22,12%;
+- prevalência do evento de 22,12% no treino;
 - `LIMIT_BAL` entre 10.000 e 1.000.000;
 - idade entre 21 e 79 anos;
 - status de pagamento entre -2 e 8;
 - códigos residuais 0, 5 e 6 em educação e código 0 em estado civil;
 - saldos de fatura negativos, compatíveis com crédito ou estorno;
-- 966 registros sem fatura positiva acumulada em seis meses;
-- 160 razões pagamento/fatura acima de 5 e máximo bruto de 797.
+- 582 registros de treino sem fatura positiva acumulada em seis meses;
+- 110 registros de treino com razão pagamento/fatura acima de 5 e máximo bruto de 797.
 
 ## Decisões de curadoria
 
@@ -61,7 +63,8 @@ semente 42:
 | Teste/referência | 4.501 | 996 | 22,1284% |
 | Pool de simulação | 2.999 | 663 | 22,1074% |
 
-O treino ajusta os coeficientes. A validação escolhe somente o limiar que
+O manifesto inclui um SHA-256 da lista ordenada de IDs de cada partição, e o
+treinamento aborta se houver IDs duplicados ou sobrepostos. O treino ajusta os coeficientes. A validação escolhe somente o limiar que
 maximiza F2. O teste mede a linha de base final e será a referência congelada
 de monitoramento. O pool de simulação não participa do ajuste nem da escolha do
 limiar.
@@ -86,5 +89,6 @@ O limiar F2 escolhido na validação foi `0,1762696902`. No teste/referência:
 | Taxa de revisão | 0,2961564 |
 
 O modelo, o limiar, as métricas, a configuração resolvida, a identidade da
-fonte e o manifesto agregado foram registrados no MLflow pelo run
-`8f0ae13d86ae43bd9615c563b87d48db`.
+fonte, os hashes do modelo/código e o manifesto foram registrados no MLflow.
+O mesmo run comprova que um lote inválido no pipeline real termina `REJECTED`
+com zero scores e lista somente coluna/regra das violações.

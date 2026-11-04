@@ -1,0 +1,25 @@
+{
+  "archive_sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
+  "duration_seconds": 0.33657914899958996,
+  "event_rate": 0.2212,
+  "pipeline_state": "PREPARED",
+  "process_health": {
+    "cpu_count": 16,
+    "max_rss_mb": 370.5078125,
+    "platform": "linux",
+    "python_version": "3.12.3"
+  },
+  "rows": 30000,
+  "run_id": "e79aa8ad298f4e8697363aac26253584",
+  "source_provenance": {
+    "revision": "367aa922f86eb4363e53d82f721346934f008784",
+    "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
+    "worktree_dirty": true
+  },
+  "stages": {
+    "download": "COMPLETED",
+    "ingestion": "COMPLETED",
+    "persistence": "COMPLETED",
+    "transformation": "COMPLETED"
+  }
+}

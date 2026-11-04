@@ -232,7 +232,7 @@ def assign_stratified_partitions(
 
 
 def build_partition_manifest(data: pl.DataFrame) -> pl.DataFrame:
-    return (
+    summary = (
         data.lazy()
         .group_by("partition")
         .agg(
@@ -244,3 +244,20 @@ def build_partition_manifest(data: pl.DataFrame) -> pl.DataFrame:
         .sort("partition")
         .collect()
     )
+    identifier_hashes = pl.DataFrame(
+        {
+            "partition": list(PARTITIONS),
+            "id_sha256": [
+                hashlib.sha256(
+                    ",".join(
+                        str(identifier)
+                        for identifier in sorted(
+                            data.filter(pl.col("partition") == partition).get_column(ID_COLUMN)
+                        )
+                    ).encode()
+                ).hexdigest()
+                for partition in PARTITIONS
+            ],
+        }
+    )
+    return summary.join(identifier_hashes, on="partition", how="left", validate="1:1")

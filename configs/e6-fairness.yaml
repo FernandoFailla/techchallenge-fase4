@@ -1,0 +1,9 @@
+seed: 48
+experiment_name: credit-fairness-e6
+e5_config_path: configs/e5-drift.yaml
+minimum_group_rows: 200
+minimum_group_events: 30
+minimum_group_non_events: 30
+bootstrap_samples: 200
+disparity_review_threshold: 0.10
+runtime_dir: artifacts/runtime

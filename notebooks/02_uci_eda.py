@@ -10,7 +10,7 @@ def title():
 
     mo.md("""# EDA E4: dados reais e baseline sem leakage
 
-    Investigacao reproduzivel do dataset UCI antes do treino oficial.""")
+    Investigacao reproduzivel com analises supervisionadas restritas ao treino.""")
     return (mo,)
 
 
@@ -66,6 +66,7 @@ def questions(mo):
 
 @app.cell(hide_code=True)
 def load_data(
+    ID_COLUMN,
     MODEL_FEATURE_COLUMNS,
     build_modeling_dataset,
     load_training_config,
@@ -76,28 +77,31 @@ def load_data(
     workbook_path = config.data_dir / "raw" / "default of credit card clients.xls"
     processed_path = config.data_dir / "processed" / "credit-modeling.parquet"
     raw_data = load_uci_credit_data(workbook_path)
-    modeling_data = build_modeling_dataset(raw_data)
     partitioned_data = pl.scan_parquet(processed_path).collect()
+    train_ids = partitioned_data.filter(pl.col("partition") == "train").select(ID_COLUMN)
+    train_raw_data = raw_data.join(train_ids, on=ID_COLUMN, how="inner", validate="1:1")
+    train_modeling_data = build_modeling_dataset(train_raw_data)
 
     {
         "raw_shape": raw_data.shape,
-        "modeling_shape": modeling_data.shape,
+        "train_modeling_shape": train_modeling_data.shape,
         "model_features": MODEL_FEATURE_COLUMNS,
     }
-    return modeling_data, partitioned_data, raw_data
+    return partitioned_data, raw_data, train_modeling_data, train_raw_data
 
 
 @app.cell(hide_code=True)
-def quality_evidence(ID_COLUMN, TARGET_COLUMN, mo, pl, raw_data):
+def quality_evidence(ID_COLUMN, TARGET_COLUMN, mo, pl, raw_data, train_raw_data):
     quality_summary = raw_data.select(
         pl.len().alias("rows"),
         pl.col(ID_COLUMN).n_unique().alias("unique_ids"),
         pl.sum_horizontal(pl.all().null_count()).alias("null_values"),
-        pl.col(TARGET_COLUMN).mean().alias("event_rate"),
         pl.col("LIMIT_BAL").min().alias("limit_min"),
         pl.col("LIMIT_BAL").max().alias("limit_max"),
         pl.col("AGE").min().alias("age_min"),
         pl.col("AGE").max().alias("age_max"),
+    ).with_columns(
+        pl.lit(train_raw_data.get_column(TARGET_COLUMN).mean()).alias("train_event_rate")
     )
 
     mo.vstack([mo.md("## Evidencia de qualidade"), quality_summary])
@@ -105,21 +109,21 @@ def quality_evidence(ID_COLUMN, TARGET_COLUMN, mo, pl, raw_data):
 
 
 @app.cell(hide_code=True)
-def anomaly_evidence(BILL_COLUMNS, PAYMENT_COLUMNS, mo, pl, raw_data):
+def anomaly_evidence(BILL_COLUMNS, PAYMENT_COLUMNS, mo, pl, train_raw_data):
     category_anomalies = pl.concat(
         [
-            raw_data.group_by("EDUCATION")
+            train_raw_data.group_by("EDUCATION")
             .len()
             .rename({"EDUCATION": "code"})
             .with_columns(pl.lit("EDUCATION").alias("field")),
-            raw_data.group_by("MARRIAGE")
+            train_raw_data.group_by("MARRIAGE")
             .len()
             .rename({"MARRIAGE": "code"})
             .with_columns(pl.lit("MARRIAGE").alias("field")),
         ]
     ).sort("field", "code")
     ratio_evidence = (
-        raw_data.lazy()
+        train_raw_data.lazy()
         .with_columns(
             pl.sum_horizontal(*PAYMENT_COLUMNS).alias("total_payment"),
             pl.sum_horizontal(
@@ -160,8 +164,8 @@ def curation_decisions(mo, quality_summary, ratio_evidence):
         f"""
         ## Resposta e decisoes de curadoria
 
-        - O alvo tem prevalencia de **{quality_summary.item(0, "event_rate"):.2%}** e
-          nao ha nulos.
+        - O alvo no treino tem prevalencia de
+          **{quality_summary.item(0, "train_event_rate"):.2%}** e nao ha nulos.
         - Codigos residuais de `EDUCATION` (0, 5, 6) sao consolidados em 4, e o
           codigo 0 de `MARRIAGE` e consolidado em 3.
         - Saldos negativos sao preservados como credito/estorno; utilizacoes sao
@@ -170,7 +174,8 @@ def curation_decisions(mo, quality_summary, ratio_evidence):
           **{ratio_evidence.item(0, "payment_ratio_above_5")}** linhas excedem o
           corte, enquanto o maximo bruto chega a
           **{ratio_evidence.item(0, "payment_ratio_max"):.0f}**.
-        - Sexo, idade, educacao e estado civil permanecem somente na visao de
+        - Decisoes supervisionadas e de tratamento usam somente o treino; teste e
+          simulacao permanecem fechados. Sexo, idade, educacao e estado civil ficam na visao de
           auditoria e nao entram em `MODEL_FEATURE_COLUMNS`.
         """
     )
@@ -208,12 +213,12 @@ def delay_plot(
     geom_point,
     ggplot,
     labs,
-    modeling_data,
+    train_modeling_data,
     pl,
     theme_minimal,
 ):
     delay_risk = (
-        modeling_data.lazy()
+        train_modeling_data.lazy()
         .group_by("MAX_DELAY_6M")
         .agg(
             pl.len().alias("rows"),
@@ -243,7 +248,7 @@ def conclusion(mo):
     ## Conclusao
 
     A fonte oficial e adequada ao baseline: 30 mil clientes, alvo binario e
-    prevalencia suficiente em todas as particoes. O conjunto comportamental curado
+    prevalencia suficiente no treino. O conjunto comportamental curado
     e as particoes estratificadas podem seguir para treino. A entrega usa a Pipeline
     logistica oficial de fallback; WOE e tabela de pontos continuam como melhoria
     posterior, sem afirmar que um scorecard esta ativo.

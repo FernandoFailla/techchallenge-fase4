@@ -47,7 +47,7 @@ Este documento é a especificação narrativa do mapa visual do Tech Challenge. 
 - Marimo organiza cada investigação como hipótese, evidência e decisão.
 - Polars e Plotnine são o stack principal de manipulação e visualização.
 - A EDA deve fechar partições, ranges dos contratos e grupos de auditoria.
-- `uv`, Makefile e CI formam a base executável que sustenta as etapas seguintes.
+- `uv`, Makefile e o gate local `make check` formam a base executável; CI permanece proposta, não implementada.
 
 Fontes: [Plano de implementação](implementation-plan.md#dias-1-e-2-bootstrap-e-eda), [ADR 0009](adr/0009-make-and-uv-execution.md) e [ADR 0013](adr/0013-lightweight-ci.md).
 
@@ -106,7 +106,7 @@ Fontes: [Modelo causal](causal-model.md), [ADR 0010](adr/0010-causal-analysis-bo
 **Relação desenhada:** logs e Evidently convergem no run MLflow; Fairlearn passa pelo gate amostral e também registra no run; o run produz artefatos.
 
 - Logs JSON registram estado, duração e volume sem linhas individuais.
-- Evidently produz PSI, KS, relatórios e alertas de drift.
+- Evidently produz testes, relatórios e alertas de drift; o módulo local calcula PSI com bins da referência, e Scikit-Learn calcula KS de discriminação.
 - Fairlearn calcula métricas desagregadas e `equalized_odds_difference`.
 - O gate de publicação exige pelo menos 200 registros e 30 eventos e 30 não eventos por grupo.
 - Somente depois do gate as métricas de grupo são registradas no run MLflow.

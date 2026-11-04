@@ -11,6 +11,7 @@ from time import perf_counter
 import mlflow
 
 from credit_monitoring.config import load_demo_config
+from credit_monitoring.health import collect_process_health
 from credit_monitoring.monitoring import analyze_data_drift
 from credit_monitoring.scoring import fit_baseline_model, score_batch
 from credit_monitoring.simulation import (
@@ -119,6 +120,7 @@ def main() -> None:
         )
 
         duration_seconds = perf_counter() - total_started
+        process_health = collect_process_health()
         summary = {
             "run_id": run_id,
             "processing_state": processing_state,
@@ -127,11 +129,13 @@ def main() -> None:
             "scored_rows": scored.scores.height,
             "invalid_batch_scored_rows": rejected.scores.height,
             "invalid_batch_failure_count": rejected.failure_count,
+            "invalid_batch_violations": [asdict(violation) for violation in rejected.violations],
             "drifted_features": drift.summary.drifted_features,
             "drifted_feature_count": drift.summary.drifted_count,
             "drifted_feature_share": drift.summary.drifted_share,
             "review_required_count": scored.scores.get_column("review_required").sum(),
             "duration_seconds": duration_seconds,
+            "process_health": asdict(process_health),
         }
         summary_path.write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n",
@@ -170,6 +174,8 @@ def main() -> None:
                 "drifted_feature_share": drift.summary.drifted_share,
                 "alert_count": int(drift.summary.alert),
                 "review_required_count": summary["review_required_count"],
+                "process_cpu_count": process_health.cpu_count,
+                "process_max_rss_mb": process_health.max_rss_mb,
             }
         )
         mlflow.set_tags(
@@ -179,6 +185,8 @@ def main() -> None:
                 "invalid_batch_state": rejected.state.value,
                 "processing_state": processing_state,
                 "drifted_features": ",".join(drift.summary.drifted_features),
+                "python_version": process_health.python_version,
+                "platform": process_health.platform,
             }
         )
         mlflow.log_artifacts(output_dir, artifact_path="d4-demo")

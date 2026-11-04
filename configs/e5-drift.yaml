@@ -11,4 +11,5 @@ expected_model_version: real-logistic-v1
 data_path: data/processed/credit-modeling.parquet
 model_path: artifacts/runtime/training-e4/credit-model.pkl
 runtime_dir: artifacts/runtime
+scoring_at: "2026-03-01T00:00:00"
 outcome_available_at: "2026-04-01T00:00:00"

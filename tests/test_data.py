@@ -108,4 +108,5 @@ def test_stratified_partitions_are_deterministic_and_disjoint() -> None:
         "simulation",
     }
     assert manifest.get_column("rows").sum() == 1_000
+    assert manifest.get_column("id_sha256").str.len_chars().eq(64).all()
     assert manifest.get_column("event_rate").max() - manifest.get_column("event_rate").min() < 0.01

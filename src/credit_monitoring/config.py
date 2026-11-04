@@ -45,7 +45,20 @@ DRIFT_EXPECTED_FIELDS = {
     "data_path",
     "model_path",
     "runtime_dir",
+    "scoring_at",
     "outcome_available_at",
+}
+
+FAIRNESS_EXPECTED_FIELDS = {
+    "seed",
+    "experiment_name",
+    "e5_config_path",
+    "minimum_group_rows",
+    "minimum_group_events",
+    "minimum_group_non_events",
+    "bootstrap_samples",
+    "disparity_review_threshold",
+    "runtime_dir",
 }
 
 
@@ -89,7 +102,21 @@ class DriftConfig:
     data_path: Path
     model_path: Path
     runtime_dir: Path
+    scoring_at: datetime
     outcome_available_at: datetime
+
+
+@dataclass(frozen=True)
+class FairnessConfig:
+    seed: int
+    experiment_name: str
+    e5_config_path: Path
+    minimum_group_rows: int
+    minimum_group_events: int
+    minimum_group_non_events: int
+    bootstrap_samples: int
+    disparity_review_threshold: float
+    runtime_dir: Path
 
 
 def _require_integer(payload: dict[str, Any], field: str, *, minimum: int) -> int:
@@ -230,17 +257,21 @@ def load_drift_config(path: str | Path) -> DriftConfig:
         "data_path",
         "model_path",
         "runtime_dir",
+        "scoring_at",
         "outcome_available_at",
     )
     for field in string_fields:
         if not isinstance(payload[field], str) or not payload[field].strip():
             raise ValueError(f"{field} must be a non-empty string")
     try:
+        scoring_at = datetime.fromisoformat(payload["scoring_at"])
         outcome_available_at = datetime.fromisoformat(payload["outcome_available_at"])
     except ValueError as error:
-        raise ValueError("outcome_available_at must be an ISO-8601 datetime") from error
-    if outcome_available_at.tzinfo is not None:
-        raise ValueError("outcome_available_at must use naive UTC")
+        raise ValueError("drift timestamps must use ISO-8601") from error
+    if scoring_at.tzinfo is not None or outcome_available_at.tzinfo is not None:
+        raise ValueError("drift timestamps must use naive UTC")
+    if scoring_at >= outcome_available_at:
+        raise ValueError("scoring_at must precede outcome_available_at")
 
     return DriftConfig(
         seed=_require_integer(payload, "seed", minimum=0),
@@ -256,5 +287,48 @@ def load_drift_config(path: str | Path) -> DriftConfig:
         data_path=Path(payload["data_path"]),
         model_path=Path(payload["model_path"]),
         runtime_dir=Path(payload["runtime_dir"]),
+        scoring_at=scoring_at,
         outcome_available_at=outcome_available_at,
+    )
+
+
+def load_fairness_config(path: str | Path) -> FairnessConfig:
+    config_path = Path(path)
+    payload = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("configuration must be a YAML mapping")
+
+    fields = set(payload)
+    missing = sorted(FAIRNESS_EXPECTED_FIELDS - fields)
+    unknown = sorted(fields - FAIRNESS_EXPECTED_FIELDS)
+    if missing:
+        raise ValueError(f"missing configuration fields: {', '.join(missing)}")
+    if unknown:
+        raise ValueError(f"unknown configuration fields: {', '.join(unknown)}")
+
+    integer_fields = (
+        "minimum_group_rows",
+        "minimum_group_events",
+        "minimum_group_non_events",
+        "bootstrap_samples",
+    )
+    integers = {field: _require_integer(payload, field, minimum=1) for field in integer_fields}
+    if integers["bootstrap_samples"] < 50:
+        raise ValueError("bootstrap_samples must be at least 50")
+    disparity_review_threshold = _require_float(payload, "disparity_review_threshold")
+    if not 0 <= disparity_review_threshold <= 1:
+        raise ValueError("disparity_review_threshold must be between 0 and 1")
+
+    string_fields = ("experiment_name", "e5_config_path", "runtime_dir")
+    for field in string_fields:
+        if not isinstance(payload[field], str) or not payload[field].strip():
+            raise ValueError(f"{field} must be a non-empty string")
+
+    return FairnessConfig(
+        seed=_require_integer(payload, "seed", minimum=0),
+        experiment_name=payload["experiment_name"],
+        e5_config_path=Path(payload["e5_config_path"]),
+        **integers,
+        disparity_review_threshold=disparity_review_threshold,
+        runtime_dir=Path(payload["runtime_dir"]),
     )

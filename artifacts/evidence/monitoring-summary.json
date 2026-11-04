@@ -1,0 +1,280 @@
+{
+  "d4": {
+    "drifted_feature_count": 2,
+    "drifted_feature_share": 0.4,
+    "drifted_features": [
+      "LIMIT_BAL",
+      "AGE"
+    ],
+    "duration_seconds": 0.45684040900232503,
+    "invalid_batch_failure_count": 4,
+    "invalid_batch_scored_rows": 0,
+    "invalid_batch_state": "REJECTED",
+    "invalid_batch_violations": [
+      {
+        "check": "in_range(18, 100)",
+        "column": "AGE"
+      },
+      {
+        "check": "field_uniqueness",
+        "column": "ID"
+      },
+      {
+        "check": "greater_than(0)",
+        "column": "LIMIT_BAL"
+      }
+    ],
+    "process_health": {
+      "cpu_count": 16,
+      "max_rss_mb": 464.203125,
+      "platform": "linux",
+      "python_version": "3.12.3"
+    },
+    "processing_state": "PROCESSED_WITH_ALERTS",
+    "review_required_count": 44,
+    "run_id": "e6d6b7677dfc410fa9678a4042364859",
+    "scored_rows": 200,
+    "valid_batch_state": "SCORED"
+  },
+  "data_preparation": {
+    "archive_sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
+    "duration_seconds": 0.33657914899958996,
+    "event_rate": 0.2212,
+    "pipeline_state": "PREPARED",
+    "process_health": {
+      "cpu_count": 16,
+      "max_rss_mb": 370.5078125,
+      "platform": "linux",
+      "python_version": "3.12.3"
+    },
+    "rows": 30000,
+    "run_id": "e79aa8ad298f4e8697363aac26253584",
+    "source_provenance": {
+      "revision": "367aa922f86eb4363e53d82f721346934f008784",
+      "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
+      "worktree_dirty": true
+    },
+    "stages": {
+      "download": "COMPLETED",
+      "ingestion": "COMPLETED",
+      "persistence": "COMPLETED",
+      "transformation": "COMPLETED"
+    }
+  },
+  "drift": {
+    "brier_shift": {
+      "alert": true,
+      "baseline": 0.15942284389349287,
+      "bootstrap_samples": 300,
+      "confidence_lower": 0.021234051485456894,
+      "confidence_upper": 0.041524999834617486,
+      "current": 0.19035687262924197,
+      "difference": 0.030934028735749103,
+      "metric": "brier_score"
+    },
+    "cohort_ids_disjoint": true,
+    "concept_drift": {
+      "changed_outcomes": 55,
+      "mean_p0": 0.21632070014119867,
+      "mean_p1": 0.27274032982774477,
+      "mean_probability_lift": 0.05641962968654616,
+      "mean_vulnerability": 0.15973559837005968,
+      "y0_event_rate": 0.23866666666666667,
+      "y1_event_rate": 0.312
+    },
+    "model_version": "real-logistic-v1",
+    "months": {
+      "M1": {
+        "evidently_drifted_count": 1,
+        "evidently_drifted_features": [
+          "LIMIT_BAL"
+        ],
+        "processing_state": "PROCESSED",
+        "psi_feature_warning_count": 0,
+        "rows": 750,
+        "score_psi": 0.01425768791676922
+      },
+      "M2": {
+        "evidently_drifted_count": 7,
+        "evidently_drifted_features": [
+          "LIMIT_BAL",
+          "UTILIZATION_CURRENT",
+          "UTILIZATION_MEAN_6M",
+          "PAYMENT_TO_BILL_RATIO_6M",
+          "PAY_0",
+          "MAX_DELAY_6M",
+          "DELAY_MONTHS_6M"
+        ],
+        "processing_state": "PROCESSED_WITH_ALERTS",
+        "psi_feature_warning_count": 4,
+        "rows": 750,
+        "score_psi": 0.25732666099626267
+      },
+      "M3": {
+        "evidently_drifted_count": 1,
+        "evidently_drifted_features": [
+          "LIMIT_BAL"
+        ],
+        "processing_state": "PROCESSED",
+        "psi_feature_warning_count": 0,
+        "rows": 750,
+        "score_psi": 0.015550827502900356
+      }
+    },
+    "outcome_timeline": {
+      "available_at": "2026-04-01T00:00:00",
+      "delay_days": 31,
+      "scoring_at": "2026-03-01T00:00:00",
+      "state_at_availability": "MATURED",
+      "state_at_scoring": "EVALUATION_BLOCKED"
+    },
+    "process_health": {
+      "cpu_count": 16,
+      "max_rss_mb": 482.02734375,
+      "platform": "linux",
+      "python_version": "3.12.3"
+    },
+    "run_id": "0c5816fb29f942399825f0608e6f4631",
+    "source_provenance": {
+      "revision": "367aa922f86eb4363e53d82f721346934f008784",
+      "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
+      "worktree_dirty": true
+    }
+  },
+  "fairness": {
+    "analyses": {
+      "AGE_AUDIT_GROUP": {
+        "disparity_review_threshold": 0.1,
+        "equalized_odds_ci_lower": 0.06623439391282411,
+        "equalized_odds_ci_upper": 0.27655595736581656,
+        "equalized_odds_difference": 0.1343738104301485,
+        "evidence_sufficient": true,
+        "investigation_required": false,
+        "published_group_count": 3,
+        "recommendation": "retain monitoring; no automatic mitigation or threshold change",
+        "sensitive_feature": "AGE_AUDIT_GROUP",
+        "suppressed_group_count": 0
+      },
+      "SEX_AUDIT_GROUP": {
+        "disparity_review_threshold": 0.1,
+        "equalized_odds_ci_lower": 0.009203716152644268,
+        "equalized_odds_ci_upper": 0.15563519344693916,
+        "equalized_odds_difference": 0.04578366123016164,
+        "evidence_sufficient": true,
+        "investigation_required": false,
+        "published_group_count": 2,
+        "recommendation": "retain monitoring; no automatic mitigation or threshold change",
+        "sensitive_feature": "SEX_AUDIT_GROUP",
+        "suppressed_group_count": 0
+      }
+    },
+    "fairness_state": "MONITORING_CONTINUES",
+    "model_version": "real-logistic-v1",
+    "outcome_state": "MATURED",
+    "playbook": {
+      "assessment_scope": "group error-rate comparison on synthetic matured M3 outcomes",
+      "automatic_mitigation": false,
+      "automatic_retraining": false,
+      "checks": {
+        "common_threshold_across_groups": true,
+        "demographics_excluded_from_model": true,
+        "no_groups_suppressed": true
+      },
+      "label_source": "simulate_concept_drift synthetic_p1",
+      "recommendation": "retain monitoring; collect real temporal outcomes before policy changes",
+      "state": "MONITORING_CONTINUES"
+    },
+    "process_health": {
+      "cpu_count": 16,
+      "max_rss_mb": 370.60546875,
+      "platform": "linux",
+      "python_version": "3.12.3"
+    },
+    "row_level_data_persisted": false,
+    "rows": 750,
+    "run_id": "f91fcd84608f4afd8bd5c4da26a05621",
+    "source_provenance": {
+      "revision": "367aa922f86eb4363e53d82f721346934f008784",
+      "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
+      "worktree_dirty": true
+    }
+  },
+  "training": {
+    "invalid_batch": {
+      "failure_count": 3,
+      "scored_rows": 0,
+      "state": "REJECTED",
+      "violations": [
+        {
+          "check": "greater_than(0)",
+          "column": "LIMIT_BAL"
+        },
+        {
+          "check": "in_range(-2, 8)",
+          "column": "PAY_0"
+        },
+        {
+          "check": "in_range(-1, 2)",
+          "column": "UTILIZATION_CURRENT"
+        }
+      ]
+    },
+    "metrics": {
+      "test": {
+        "average_precision": 0.5142285435678502,
+        "brier_score": 0.14275184603680185,
+        "event_rate": 0.22128415907576093,
+        "events": 996,
+        "f2": 0.5595260485236035,
+        "ks_discrimination": 0.3912282510928164,
+        "precision": 0.4463615903975994,
+        "recall": 0.5973895582329317,
+        "review_rate": 0.2961564096867363,
+        "roc_auc": 0.723526631490298,
+        "rows": 4501
+      },
+      "validation": {
+        "average_precision": 0.565230812874842,
+        "brier_score": 0.13401527103897473,
+        "event_rate": 0.22116025783507445,
+        "events": 995,
+        "f2": 0.6293260473588342,
+        "ks_discrimination": 0.47159914871159453,
+        "precision": 0.45761589403973507,
+        "recall": 0.6944723618090453,
+        "review_rate": 0.335630140031118,
+        "roc_auc": 0.7689622484568963,
+        "rows": 4499
+      }
+    },
+    "model": {
+      "feature_columns": [
+        "LIMIT_BAL",
+        "PAY_0",
+        "MAX_DELAY_6M",
+        "DELAY_MONTHS_6M",
+        "UTILIZATION_CURRENT",
+        "UTILIZATION_MEAN_6M",
+        "PAYMENT_TO_BILL_RATIO_6M"
+      ],
+      "model_sha256": "448e13c4a15c11aed855ec7540d18f0feec1e4f10d7d46ce317ef61ea6872609",
+      "model_type": "standardized_logistic_regression",
+      "model_version": "real-logistic-v1",
+      "process_health": {
+        "cpu_count": 16,
+        "max_rss_mb": 315.70703125,
+        "platform": "linux",
+        "python_version": "3.12.3"
+      },
+      "reference_partition": "test",
+      "review_threshold": 0.17626969022674288,
+      "scorecard_active": false,
+      "source_provenance": {
+        "revision": "367aa922f86eb4363e53d82f721346934f008784",
+        "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
+        "worktree_dirty": true
+      },
+      "threshold_objective": "F2 on validation"
+    }
+  }
+}

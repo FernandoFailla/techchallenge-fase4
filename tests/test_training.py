@@ -7,6 +7,7 @@ from credit_monitoring.training import (
     evaluate_credit_model,
     fit_credit_model,
     predict_credit_risk,
+    validate_partition_isolation,
 )
 
 
@@ -83,3 +84,13 @@ def test_real_scoring_contract_blocks_out_of_range_features() -> None:
 
     with pytest.raises(BatchContractError):
         predict_credit_risk(model, invalid)
+
+
+def test_partition_isolation_rejects_duplicate_or_overlapping_identifiers() -> None:
+    data = modeling_fixture()
+    duplicate = pl.concat((data.head(100), data.head(1)))
+
+    with pytest.raises(ValueError, match="identifiers must be unique"):
+        validate_partition_isolation({"train": duplicate, "validation": data.slice(100, 100)})
+    with pytest.raises(ValueError, match="overlaps earlier partitions"):
+        validate_partition_isolation({"train": data.head(100), "validation": data.slice(99, 100)})

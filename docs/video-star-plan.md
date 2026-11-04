@@ -30,14 +30,15 @@ Duração alvo: 4min30s. Limite absoluto: 5 minutos.
 ### 1:55-2:45 - Data Drift
 
 - Comparar mês saudável e mês de mudança populacional.
-- Abrir o relatório Evidently e destacar pelo menos duas features com PSI relevante.
+- Abrir o relatório e destacar pelo menos duas features com PSI acima de 0,10.
 - Mostrar que o lote foi processado com alerta, não bloqueado.
 
 ### 2:45-3:30 - Concept Drift e fairness
 
-- Mostrar `p0(X)` e `p1(X)` sobre as mesmas entradas e o lote maturado sob choque.
-- Explicar que o contraste demonstra a mudança programada em `P(Y|X)` e que a piora de desempenho é consequência.
-- Exibir uma tabela agregada do Fairlearn sem dados individuais.
+- Mostrar `p0(X)` 0,2163 e `p1(X)` 0,2727 sobre as mesmas entradas; destacar Brier de 0,1594 para 0,1904.
+- Explicar que o contraste demonstra a mudança programada em `P(Y|X)`, não causalidade econômica real.
+- Exibir a tabela agregada do Fairlearn: diferenças 0,0458 por sexo e 0,1344 por idade.
+- Explicar que a incerteza não sustenta mudança automática: estado `MONITORING_CONTINUES`.
 
 ### 3:30-4:05 - Observabilidade
 

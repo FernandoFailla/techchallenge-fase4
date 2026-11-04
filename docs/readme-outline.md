@@ -13,7 +13,7 @@
 11. Auditoria Fairlearn e interpretação das disparidades.
 12. DAG, intervenção sintética e limites causais.
 13. Governança, LGPD, base legal, minimização, retenção e direitos.
-14. Testes, CI, reprodutibilidade e estrutura do repositório.
+14. Testes, gate local, proposta de CI, reprodutibilidade e estrutura do repositório.
 15. Resultados, limitações e próximos passos.
 16. Autoria, referências e atribuição CC BY 4.0.
 

@@ -55,6 +55,8 @@ def _validate_features(data: pl.DataFrame) -> None:
         raise ValueError(f"missing modeling columns: {', '.join(missing)}")
     if data.height == 0:
         raise ValueError("modeling data must not be empty")
+    if data.get_column(ID_COLUMN).n_unique() != data.height:
+        raise ValueError("modeling identifiers must be unique")
     if data.select(*MODEL_FEATURE_COLUMNS).null_count().sum_horizontal().item() != 0:
         raise ValueError("modeling data must not contain null values")
 
@@ -69,6 +71,19 @@ def _validate_labeled_data(data: pl.DataFrame) -> None:
         raise ValueError("modeling target must contain both binary classes")
 
 
+def validate_partition_isolation(partitions: dict[str, pl.DataFrame]) -> None:
+    if len(partitions) < 2:
+        raise ValueError("at least two partitions are required")
+    seen: set[int] = set()
+    for name, data in partitions.items():
+        _validate_labeled_data(data)
+        identifiers = set(data.get_column(ID_COLUMN))
+        overlap = seen & identifiers
+        if overlap:
+            raise ValueError(f"partition {name} overlaps earlier partitions by {len(overlap)} IDs")
+        seen.update(identifiers)
+
+
 def fit_credit_model(
     train: pl.DataFrame,
     validation: pl.DataFrame,
@@ -78,6 +93,7 @@ def fit_credit_model(
 ) -> CreditModel:
     _validate_labeled_data(train)
     _validate_labeled_data(validation)
+    validate_partition_isolation({"train": train, "validation": validation})
     pipeline = Pipeline(
         steps=[
             ("scale", StandardScaler()),

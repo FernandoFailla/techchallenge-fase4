@@ -370,6 +370,7 @@ def default_rate_by_score_band(data: pl.DataFrame) -> pl.DataFrame:
             pl.col(TARGET_COLUMN).mean().alias("event_rate"),
             pl.col("default_probability").mean().alias("mean_probability"),
         )
+        .with_columns(pl.col("event_rate", "mean_probability").round(12))
         .sort("score_band")
         .collect()
     )
