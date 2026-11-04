@@ -67,14 +67,14 @@
   },
   "process_health": {
     "cpu_count": 16,
-    "max_rss_mb": 482.02734375,
+    "max_rss_mb": 481.546875,
     "platform": "linux",
     "python_version": "3.12.3"
   },
-  "run_id": "0c5816fb29f942399825f0608e6f4631",
+  "run_id": "0b639a40705c4c19bc5d3596e46b047e",
   "source_provenance": {
-    "revision": "367aa922f86eb4363e53d82f721346934f008784",
+    "revision": "7ccdd34ea4d1fc13d81f46b99e3977f49bf028f9",
     "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
-    "worktree_dirty": true
+    "worktree_dirty": false
   }
 }

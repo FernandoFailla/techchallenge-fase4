@@ -21,7 +21,7 @@
   <p>Relatório customizado gerado de runs locais concluídas.
     Não contém IDs ou linhas de clientes.</p>
   <h2>Ingestão e transformação</h2>
-  <p class="ok">Run MLflow <code>e79aa8ad298f4e8697363aac26253584</code>;
+  <p class="ok">Run MLflow <code>b112b874f35049fc9f37dece61109bcf</code>;
     estado <code>PREPARED</code>; 30000 linhas.
     Download, ingestão, transformação e persistência terminaram em
     <code>COMPLETED</code>.</p>
@@ -31,12 +31,12 @@
     falhas: 3.</p>
   <ul><li><code>LIMIT_BAL</code>: greater_than(0)</li><li><code>PAY_0</code>: in_range(-2, 8)</li><li><code>UTILIZATION_CURRENT</code>: in_range(-1, 2)</li></ul>
   <h2>Data Drift e saúde mensal</h2>
-  <p>Run MLflow E5: <code>0c5816fb29f942399825f0608e6f4631</code>. Evidently compara cada safra com
+  <p>Run MLflow E5: <code>0b639a40705c4c19bc5d3596e46b047e</code>. Evidently compara cada safra com
     a referência; PSI usa bins fixados na referência.</p>
   <table><thead><tr><th>Safra</th><th>Volume</th><th>Estado</th><th>Features Evidently</th>
     <th>Alertas PSI</th><th>PSI do score</th></tr></thead><tbody><tr><td>M1</td><td>750</td><td><code>PROCESSED</code></td><td>1</td><td>0</td><td>0.0143</td></tr><tr><td>M2</td><td>750</td><td><code>PROCESSED_WITH_ALERTS</code></td><td>7</td><td>4</td><td>0.2573</td></tr><tr><td>M3</td><td>750</td><td><code>PROCESSED</code></td><td>1</td><td>0</td><td>0.0156</td></tr></tbody></table>
   <p>Saúde do processo E5: 16 CPUs disponíveis;
-    pico RSS 482.0 MB;
+    pico RSS 481.5 MB;
     Python 3.12.3.</p>
   <h2>Desfecho atrasado e Concept Drift</h2>
   <p>Na emissão do score: <code>EVALUATION_BLOCKED</code>.
@@ -47,7 +47,7 @@
     0.0309, IC [0.0212;
     0.0415].</p>
   <h2>Fairness agregada</h2>
-  <p>Run MLflow E6: <code>f91fcd84608f4afd8bd5c4da26a05621</code>; estado
+  <p>Run MLflow E6: <code>03417dfde3bb470caf216edfd57749bc</code>; estado
     <code>MONITORING_CONTINUES</code>.</p>
   <table><thead><tr><th>Atributo</th><th>Grupos</th><th>Equalized odds</th>
     <th>IC 95%</th><th>Investigação</th></tr></thead><tbody><tr><td>AGE_AUDIT_GROUP</td><td>3</td><td>0.1344</td><td>0.0662; 0.2766</td><td>False</td></tr><tr><td>SEX_AUDIT_GROUP</td><td>2</td><td>0.0458</td><td>0.0092; 0.1556</td><td>False</td></tr></tbody></table>

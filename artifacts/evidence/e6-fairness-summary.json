@@ -43,16 +43,16 @@
   },
   "process_health": {
     "cpu_count": 16,
-    "max_rss_mb": 370.60546875,
+    "max_rss_mb": 370.21875,
     "platform": "linux",
     "python_version": "3.12.3"
   },
   "row_level_data_persisted": false,
   "rows": 750,
-  "run_id": "f91fcd84608f4afd8bd5c4da26a05621",
+  "run_id": "03417dfde3bb470caf216edfd57749bc",
   "source_provenance": {
-    "revision": "367aa922f86eb4363e53d82f721346934f008784",
+    "revision": "7ccdd34ea4d1fc13d81f46b99e3977f49bf028f9",
     "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
-    "worktree_dirty": true
+    "worktree_dirty": false
   }
 }

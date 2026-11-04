@@ -6,7 +6,7 @@
       "LIMIT_BAL",
       "AGE"
     ],
-    "duration_seconds": 0.45684040900232503,
+    "duration_seconds": 0.4579811509975116,
     "invalid_batch_failure_count": 4,
     "invalid_batch_scored_rows": 0,
     "invalid_batch_state": "REJECTED",
@@ -26,33 +26,33 @@
     ],
     "process_health": {
       "cpu_count": 16,
-      "max_rss_mb": 464.203125,
+      "max_rss_mb": 463.12109375,
       "platform": "linux",
       "python_version": "3.12.3"
     },
     "processing_state": "PROCESSED_WITH_ALERTS",
     "review_required_count": 44,
-    "run_id": "e6d6b7677dfc410fa9678a4042364859",
+    "run_id": "173672f38e384538b65b23e3a155fe9b",
     "scored_rows": 200,
     "valid_batch_state": "SCORED"
   },
   "data_preparation": {
     "archive_sha256": "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602",
-    "duration_seconds": 0.33657914899958996,
+    "duration_seconds": 0.3254014120029751,
     "event_rate": 0.2212,
     "pipeline_state": "PREPARED",
     "process_health": {
       "cpu_count": 16,
-      "max_rss_mb": 370.5078125,
+      "max_rss_mb": 370.8046875,
       "platform": "linux",
       "python_version": "3.12.3"
     },
     "rows": 30000,
-    "run_id": "e79aa8ad298f4e8697363aac26253584",
+    "run_id": "b112b874f35049fc9f37dece61109bcf",
     "source_provenance": {
-      "revision": "367aa922f86eb4363e53d82f721346934f008784",
+      "revision": "7ccdd34ea4d1fc13d81f46b99e3977f49bf028f9",
       "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
-      "worktree_dirty": true
+      "worktree_dirty": false
     },
     "stages": {
       "download": "COMPLETED",
@@ -130,15 +130,15 @@
     },
     "process_health": {
       "cpu_count": 16,
-      "max_rss_mb": 482.02734375,
+      "max_rss_mb": 481.546875,
       "platform": "linux",
       "python_version": "3.12.3"
     },
-    "run_id": "0c5816fb29f942399825f0608e6f4631",
+    "run_id": "0b639a40705c4c19bc5d3596e46b047e",
     "source_provenance": {
-      "revision": "367aa922f86eb4363e53d82f721346934f008784",
+      "revision": "7ccdd34ea4d1fc13d81f46b99e3977f49bf028f9",
       "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
-      "worktree_dirty": true
+      "worktree_dirty": false
     }
   },
   "fairness": {
@@ -186,17 +186,17 @@
     },
     "process_health": {
       "cpu_count": 16,
-      "max_rss_mb": 370.60546875,
+      "max_rss_mb": 370.21875,
       "platform": "linux",
       "python_version": "3.12.3"
     },
     "row_level_data_persisted": false,
     "rows": 750,
-    "run_id": "f91fcd84608f4afd8bd5c4da26a05621",
+    "run_id": "03417dfde3bb470caf216edfd57749bc",
     "source_provenance": {
-      "revision": "367aa922f86eb4363e53d82f721346934f008784",
+      "revision": "7ccdd34ea4d1fc13d81f46b99e3977f49bf028f9",
       "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
-      "worktree_dirty": true
+      "worktree_dirty": false
     }
   },
   "training": {
@@ -262,7 +262,7 @@
       "model_version": "real-logistic-v1",
       "process_health": {
         "cpu_count": 16,
-        "max_rss_mb": 315.70703125,
+        "max_rss_mb": 315.234375,
         "platform": "linux",
         "python_version": "3.12.3"
       },
@@ -270,9 +270,9 @@
       "review_threshold": 0.17626969022674288,
       "scorecard_active": false,
       "source_provenance": {
-        "revision": "367aa922f86eb4363e53d82f721346934f008784",
+        "revision": "7ccdd34ea4d1fc13d81f46b99e3977f49bf028f9",
         "tree_sha256": "ec79b657c62d5db55272603baf414f6f9b2be260d32bb7bea842d35643017016",
-        "worktree_dirty": true
+        "worktree_dirty": false
       },
       "threshold_objective": "F2 on validation"
     }
