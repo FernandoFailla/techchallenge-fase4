@@ -1,187 +1,172 @@
-# Credit Monitoring Tech Challenge
+# Monitoramento contínuo de risco de crédito
 
-Implementação local e reproduzível de um pipeline de risco de crédito com contratos de dados, simulação de drift, observabilidade e auditoria.
+**Tech Challenge — Fase 4 | Guia para execução e avaliação**
 
-O planejamento detalhado está em [`docs/README.md`](docs/README.md). O estado das entregas está em [`docs/implementation-plan.md`](docs/implementation-plan.md).
+Uma fintech usa um modelo para priorizar propostas de crédito para revisão. Mesmo que o código do modelo não mude, o perfil dos clientes pode mudar e os resultados reais podem demorar a chegar. Dados inválidos, mudanças na população ou uma relação diferente entre comportamento e inadimplência podem, assim, comprometer o uso do modelo sem uma falha técnica aparente.
 
-## Requisitos
+Este projeto constrói uma demonstração local desse problema: valida os dados antes do scoring, acompanha três safras simuladas, compara distribuições e desempenho, registra a execução no MLflow e analisa riscos de privacidade e de disparidade entre grupos. A saída do modelo indica **revisão reforçada**, não aprovação ou negativa automática de crédito.
 
-- Python 3.12
-- [uv](https://docs.astral.sh/uv/)
-- Make
+> **Vídeo STAR: pendente de gravação e publicação.** O roteiro está em [`docs/video-star-plan.md`](docs/video-star-plan.md); o link do vídeo ainda precisa ser adicionado antes da entrega. O vídeo corresponde a 15% da avaliação.
 
-## Ambiente
+## Comece por aqui: roteiro do avaliador
+
+| Ordem | Critério do enunciado | Peso | Onde verificar |
+|---|---|---:|---|
+| 1 | Validação de dados | 25% | [Contrato e lote rejeitado](#1-validação-de-dados--25) |
+| 2 | Detecção de drift | 25% | [Safras, Evidently e desempenho](#2-detecção-de-drift--25) |
+| 3 | Observabilidade e logs | 20% | [Relatório e MLflow](#3-observabilidade-e-logs--20) |
+| 4 | Governança e LGPD | 15% | [Privacidade, fairness e causalidade](#4-governança-privacidade-e-causalidade--15) |
+| 5 | Vídeo STAR | 15% | [Estado do vídeo](#5-vídeo-star--15) |
+
+Para uma inspeção rápida antes de executar o projeto, consulte o [relatório HTML agregado](artifacts/evidence/drift-observability-report.html) e o [resumo completo em JSON](artifacts/evidence/monitoring-summary.json). O HTML deve ser aberto em um navegador após clonar ou baixar o repositório; a visualização do GitHub pode mostrar apenas o código-fonte do arquivo.
+
+## Clonar e executar
+
+### Pré-requisitos
+
+- Git, Python **3.12**, [uv](https://docs.astral.sh/uv/getting-started/installation/) e GNU Make.
+- Ambiente Linux ou compatível com os comandos do Makefile; a demonstração foi validada em Linux.
+- Acesso à internet na primeira execução para instalar dependências e baixar o dataset oficial da UCI. O download é verificado por SHA-256.
+- Navegador para visualizar os relatórios e o MLflow local. Não são necessárias credenciais de serviços externos.
 
 ```bash
+git clone https://github.com/FernandoFailla/techchallenge-fase4.git
+cd techchallenge-fase4
 make setup
 make check
-```
-
-`make check` executa lint, verificação de formatação e testes rápidos. Dados e artefatos de runtime permanecem fora do Git; somente evidências agregadas selecionadas são versionadas.
-
-## Comandos
-
-| Comando | Finalidade |
-|---|---|
-| `make setup` | Sincronizar o ambiente a partir do lockfile |
-| `make lint` | Verificar lint e formatação |
-| `make test` | Executar a suíte rápida |
-| `make notebook-check` | Validar estaticamente o notebook Marimo |
-| `make check` | Executar lint, testes e validação do notebook |
-| `make demo` | Executar D4, preparar/treinar o baseline, monitorar E5 e auditar E6 |
-| `make d4-demo` | Executar somente a fatia vertical D4 |
-| `make prepare-data` | Baixar, verificar e particionar o dataset UCI |
-| `make train-real` | Treinar e registrar o baseline com dados reais preparados |
-| `make e4` | Executar preparação e treino da entrega E4 |
-| `make e5` | Executar as três safras, maturar M3 e registrar drift no MLflow |
-| `make e6` | Auditar fairness sobre M3 maturado e registrar evidência agregada |
-| `make evidence` | Exportar relatório HTML e resumos agregados versionáveis |
-| `make notebook` | Abrir a EDA de drift sintético no Marimo |
-| `make notebook-real` | Abrir a EDA do dataset UCI no Marimo |
-| `make notebook-drift` | Abrir a investigação das safras E5 no Marimo |
-| `make notebook-fairness` | Abrir a auditoria agregada E6 no Marimo |
-| `make mlflow-ui` | Abrir o MLflow local em `http://127.0.0.1:5000` |
-
-## Demonstração completa
-
-```bash
 make demo
-make mlflow-ui
 ```
 
-A demonstração bloqueia o lote D4 inválido antes da inferência, prepara os dados
-UCI, treina o baseline, executa as safras E5 e audita fairness em E6. Use
-`make d4-demo` para repetir somente a fatia vertical sintética. Artefatos e runs
-ficam no store local sob `artifacts/runtime/`; logs e MLflow recebem somente
-evidências agregadas, sem linhas de clientes.
+`make setup` instala as dependências com o lockfile; `make check` verifica lint, formatação, testes e os quatro notebooks; `make demo` executa a demonstração completa e atualiza as evidências agregadas. Aguarde o término de cada comando antes de passar ao próximo.
 
-## Dados reais e baseline
+Para examinar a interface de rastreamento, em um terminal separado execute:
 
 ```bash
-make e4
-make notebook-real
 make mlflow-ui
 ```
 
-O projeto usa o dataset [Default of Credit Card Clients](https://doi.org/10.24432/C55S3H),
-criado por I-Cheng Yeh e distribuído pela UCI sob licença CC BY 4.0. O download
-é aceito somente com o SHA-256
-`56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602`.
+Abra **<http://127.0.0.1:5000>**. Interrompa o servidor com `Ctrl+C` quando terminar. O projeto gera dados em `data/` e runs e relatórios detalhados em `artifacts/runtime/`, diretórios locais ignorados pelo Git. As saídas selecionadas em `artifacts/evidence/` são versionadas e **serão alteradas** por `make demo`; IDs de runs, tempos e uso de memória variam entre execuções. A execução a partir de uma árvore modificada também registra esse estado na proveniência.
 
-A EDA fechou partições estratificadas de 60% para treino, 15% para validação,
-15% para teste/referência e 10% para simulação. O modelo real atual é a
-`Pipeline` logística de fallback, versão `real-logistic-v1`; não há WOE, escala
-de pontos nem tabela de scorecard ativa. O limiar `review_required` é escolhido
-por F2 somente na validação e congelado antes da avaliação no teste.
+### O que acontece na demonstração
 
-Resultados verificados no teste/referência:
+1. Uma fatia sintética D4 pontua um lote válido e rejeita um lote corrompido.
+2. O dataset UCI é baixado, validado e particionado; uma regressão logística é treinada e avaliada.
+3. Um modelo congelado pontua três safras simuladas. M2 exercita o alerta de Data Drift; M3 recebe desfechos sintéticos após a data de maturação para avaliar Concept Drift.
+4. A auditoria de fairness compara taxas de erro de grupos com suporte suficiente; o pipeline exporta resumos agregados e um relatório HTML.
 
-| Métrica | Valor |
-|---|---:|
-| ROC-AUC | 0,7235 |
-| Average Precision | 0,5142 |
-| KS de discriminação | 0,3912 |
-| Brier score | 0,1428 |
-| Recall no limiar F2 | 0,5974 |
+## Antes dos critérios: dados e modelo
 
-Fonte, perfil, tratamentos e manifesto das partições estão documentados em
-[`docs/data-source.md`](docs/data-source.md).
+O dataset público [Default of Credit Card Clients](https://doi.org/10.24432/C55S3H), de I-Cheng Yeh, contém 30.000 registros e um alvo binário de inadimplência. A fonte UCI é distribuída sob licença CC BY 4.0. O checksum do arquivo oficial, a descrição das variáveis e as decisões de tratamento estão em [`docs/data-source.md`](docs/data-source.md).
 
-## Safras e drift
+| Partição estratificada | Registros | Papel |
+|---|---:|---|
+| Treino | 18.001 | Ajustar a regressão logística e orientar a EDA supervisionada |
+| Validação | 4.499 | Escolher o limiar de revisão pela métrica F2 |
+| Teste/referência | 4.501 | Avaliar o modelo congelado e servir de referência ao monitoramento |
+| Pool de simulação | 2.999 | Formar as safras posteriores ao congelamento |
 
-```bash
-make e5
-make notebook-drift
-make mlflow-ui
-```
+As partições são disjuntas; o treinamento verifica IDs duplicados e sobreposição. A EDA usa dados completos para verificações de estrutura e qualidade sem alvo, mas restringe relações com o alvo e decisões de tratamento ao treino. O modelo `real-logistic-v1` usa `StandardScaler` e regressão logística do Scikit-Learn. Não há WOE ou scorecard de pontos ativo.
 
-A E5 usa 2.250 registros do pool pós-congelamento para criar M1, M2 e M3 com
-750 IDs disjuntos por mês. M1 e M3 são reservados aleatoriamente primeiro. M2
-altera somente a seleção do restante: uma corrida exponencial ponderada aumenta a
-participação de baixo limite, atraso e utilização, sem editar valores individuais.
+**Para conferir:** em [`monitoring-summary.json`](artifacts/evidence/monitoring-summary.json), procure `training.model` e `training.metrics.test`. Na execução de referência, o teste apresenta ROC-AUC **0,7235**, Brier **0,1428** e recall **0,5974**. As features utilizadas, o limiar e o hash do modelo também estão no resumo. Para percorrer a EDA, após a demo execute `make notebook-real`.
 
-No scoring, o Evidently e o PSI usam o teste como referência. M2 termina em
-`PROCESSED_WITH_ALERTS`, com as sete features sinalizadas pelo Evidently, quatro
-PSI acima de 0,10 e PSI do score igual a 0,2573. M1 e M3 têm somente PSI
-informativo e terminam em `PROCESSED`.
+## 1. Validação de dados — 25%
 
-Após a maturação de M3, o feed separado é associado um-para-um aos scores. O
-simulador compara `p0(X)` com
-`p1(X) = sigmoid(logit(p0(X)) + 2 * g(X))` usando o mesmo sorteio para `Y0` e
-`Y1`. A probabilidade média sobe de 0,2163 para 0,2727, 55 desfechos pareados
-mudam e o Brier do modelo congelado piora de 0,1594 para 0,1904. O intervalo
-bootstrap da diferença, `[0,0212; 0,0415]`, aciona o alerta de desempenho.
+**Pergunta:** o modelo recebe dados inválidos ou o contrato interrompe o processamento antes da inferência?
 
-O contraste demonstra apenas o mecanismo programado no simulador; não estima um
-efeito causal econômico real. Relatórios completos e logs ficam em
-`artifacts/runtime/drift-e5/`. A evidência selecionada está em
-[`artifacts/evidence/e5-drift-summary.json`](artifacts/evidence/e5-drift-summary.json)
-e no
-[`relatório HTML de drift e observabilidade`](artifacts/evidence/drift-observability-report.html).
+Os schemas Pandera estão em [`src/credit_monitoring/contracts.py`](src/credit_monitoring/contracts.py). Entre as regras do contrato de scoring real estão:
 
-Este é um cenário de aceite determinístico, com semente e intensidade escolhidas
-para exercitar os alertas. Ele não estima sensibilidade, taxa de falso alarme ou
-desempenho futuro do detector. Os limiares PSI são convenções operacionais e o
-Evidently pode sinalizar features isoladas mesmo nas safras tratadas como estáveis.
+- `ID` obrigatório e único; campos obrigatórios sem nulos e com tipos e ordem esperados;
+- `LIMIT_BAL` maior que zero;
+- `PAY_0` entre −2 e 8;
+- `UTILIZATION_CURRENT` entre −1 e 2; a razão pagamento/fatura entre 0 e 5.
 
-## Fairness e governança
+O alvo não integra o contrato de scoring. O feed de desfechos tem contrato separado e deve ser associado aos scores de forma um-para-um.
 
-```bash
-make e6
-make notebook-fairness
-make mlflow-ui
-```
+**Verificação guiada**
 
-A E6 reconstrói deterministicamente as 750 previsões e os desfechos maturados de M3. A visão restrita
-mantida apenas em memória contém `ID`, grupo de sexo, faixa etária consolidada,
-score, decisão e alvo. Sexo, idade e identificador continuam fora de
-`MODEL_FEATURE_COLUMNS`; nenhum registro individual é persistido no MLflow.
+1. Abra o [relatório de drift e observabilidade](artifacts/evidence/drift-observability-report.html) no navegador e localize **Contrato de dados no pipeline real**.
+2. Confirme `REJECTED`, **zero linhas pontuadas** e violações de `LIMIT_BAL`, `PAY_0` e `UTILIZATION_CURRENT`.
+3. Em [`monitoring-summary.json`](artifacts/evidence/monitoring-summary.json), procure `training.invalid_batch`. A seção `d4` mostra uma segunda demonstração sintética, com um lote válido e outro rejeitado.
+4. Para examinar a implementação e os testes, abra [`scripts/train_real_model.py`](scripts/train_real_model.py), [`tests/test_training.py`](tests/test_training.py) e [`tests/`](tests/).
 
-Todos os grupos publicados cumprem o mínimo de 200 observações, 30 eventos e 30
-não eventos. A diferença de equalized odds foi 0,0458 por sexo, IC bootstrap
-`[0,0092; 0,1556]`, e 0,1344 por faixa etária, IC
-`[0,0662; 0,2766]`. Como os limites inferiores permanecem abaixo do gatilho
-operacional de 0,10, o estado é `MONITORING_CONTINUES`: coletar desfechos reais e
-manter monitoramento, sem mitigação, retreino ou limiar específico por grupo.
+## 2. Detecção de drift — 25%
 
-O resumo agregado da última demo verificada está em
-[`artifacts/evidence/e6-fairness-summary.json`](artifacts/evidence/e6-fairness-summary.json).
+**Pergunta:** a população que chega ao modelo mudou e, depois da maturação do desfecho, o desempenho também apresentou degradação?
 
-## Observabilidade
+### M1 e M2: mudança de distribuição antes do desfecho
 
-O MLflow centraliza versão do modelo, hashes de dados/modelo/código, parâmetros,
-status, duração, volume, CPUs disponíveis, pico RSS do processo, alertas, logs JSON e relatórios completos. A demo registra
-sucesso ou falha sanitizada de ingestão e transformação, o bloqueio do lote inválido no pipeline real, os estados mensais, a avaliação antes
-e depois da maturação e o resultado agregado de fairness. O relatório HTML
-versionado resume esses sinais sem copiar o banco local ou dados de clientes:
+Cada safra tem 750 registros disjuntos do pool de simulação. M1 e M3 são selecionadas aleatoriamente; M2 é selecionada com maior peso para perfis de menor limite, maior atraso e utilização, alterando a **composição** da amostra em múltiplas variáveis importantes sem editar os valores individuais. O mesmo modelo congelado gera os scores.
 
-- [`drift-observability-report.html`](artifacts/evidence/drift-observability-report.html);
-- [`monitoring-summary.json`](artifacts/evidence/monitoring-summary.json).
+O Evidently compara cada safra com o teste/referência. O projeto calcula também o PSI com bins fixados na referência. Na execução de referência:
 
-## Governança e LGPD
+| Safra | Resultado agregado | Evidência |
+|---|---|---|
+| M1 | `PROCESSED` | PSI do score 0,0143 |
+| M2 | `PROCESSED_WITH_ALERTS` | 7 features sinalizadas pelo Evidently; 4 features com PSI acima de 0,10; PSI do score 0,2573 |
+| M3 | `PROCESSED` no scoring | PSI do score 0,0156; desfecho ainda não disponível |
 
-Este projeto acadêmico usa dados públicos e não concede nem nega crédito real. No
-cenário hipotético, a fintech é a controladora e a base legal assumida para o
-monitoramento de risco da carteira é proteção do crédito, art. 7º, X da LGPD. Essa
-hipótese precisa de validação jurídica antes de produção.
+M1 e M3 têm cada uma uma feature sinalizada individualmente pelo Evidently, mas não atingem o gatilho agregado do projeto. Na M2, as quatro features acima de 0,10 incluem um PSI em nível relevante e três em nível de warning. PSI é calculado pelo projeto; o KS de discriminação mostrado nas métricas do modelo é uma medida diferente.
 
-- `ID`, sexo, idade, educação e estado civil não entram no modelo; sexo e faixas
-  etárias aparecem apenas na visão restrita de auditoria.
-- Dados e artefatos individuais ficam fora do Git, logs e MLflow; evidências de
-  entrega contêm somente agregados com supressão para grupos sem suporte.
-- A saída solicita revisão reforçada, não negativa automática. Não há retreino,
-  promoção ou limiar por grupo automáticos.
-- Retenção proposta: quarentena por até 30 dias; associação score-desfecho e visão
-  restrita por 13 meses; métricas, contratos e validações durante a vida do modelo
-  mais cinco anos. Depois do prazo, excluir ou anonimizar com evidência verificável.
-- Produção exigiria criptografia, RBAC, pseudonimização, registro imutável de acesso,
-  avaliação de impacto, contestação/revisão humana e processo para direitos do art. 18.
+**Verificação guiada**
 
-O plano completo e suas limitações estão em
-[`docs/governance-plan.md`](docs/governance-plan.md) e
-[`docs/fairness-plan.md`](docs/fairness-plan.md).
+1. No [relatório HTML](artifacts/evidence/drift-observability-report.html), veja **Data Drift e saúde mensal**.
+2. Abra [`e5-drift-summary.json`](artifacts/evidence/e5-drift-summary.json) e procure `months.M2.evidently_drifted_features` e `psi_feature_warning_count` para identificar as variáveis e os alertas.
+3. Após `make demo`, execute `make notebook-drift` para acompanhar a seleção, os scores e as comparações. Os relatórios Evidently completos ficam em `artifacts/runtime/drift-e5/<run_id>/`, incluindo `m2-data-drift.html`; o ID atual está em `artifacts/runtime/drift-e5/latest-run-id.txt`.
 
-## Causalidade e limites
+### M3: desfecho atrasado e Concept Drift sintético
+
+O scoring ocorre em 1º de março de 2026 e o desfecho simulado fica disponível em 1º de abril: antes disso, o estado é `EVALUATION_BLOCKED`; depois, `MATURED`. Para as mesmas entradas `X` e o mesmo sorteio, o simulador compara o mecanismo inicial `p0(X)` com um mecanismo alterado `p1(X) = sigmoid(logit(p0(X)) + 2 * g(X))`.
+
+Na execução de referência, a probabilidade média passa de **0,2163 para 0,2727** e 55 desfechos pareados mudam. O Brier do modelo congelado passa de **0,1594 para 0,1904**; a diferença é **0,0309**, com IC bootstrap de 95% **[0,0212; 0,0415]**, acionando alerta de desempenho. Confira `outcome_timeline`, `concept_drift` e `brier_shift` em [`e5-drift-summary.json`](artifacts/evidence/e5-drift-summary.json).
+
+O cenário usa semente e intensidade escolhidas para exercitar os alertas: demonstra uma mudança de `P(X)` e de `P(Y|X)` **programada**, não estima desempenho futuro nem degradação econômica observada.
+
+## 3. Observabilidade e logs — 20%
+
+**Pergunta:** é possível acompanhar o ciclo de vida do pipeline, identificar falhas e chegar às evidências de drift?
+
+Depois de `make demo`, execute `make mlflow-ui` e abra <http://127.0.0.1:5000>. Na lista de experimentos, examine a run mais recente de cada um:
+
+| Experimento MLflow | O que procurar |
+|---|---|
+| `credit-data-preparation-e4` | Estado `PREPARED`, volume e artefato `data-preparation-e4/events.jsonl` com download, ingestão, transformação e persistência |
+| `credit-monitoring-d4` | Estado do lote válido, lote inválido `REJECTED`, volume e alerta de drift |
+| `credit-training-e4` | Versão do modelo, métricas de validação/teste e evidência do lote inválido |
+| `credit-drift-e5` | Estados M1/M2/M3, métricas de drift e desempenho, eventos e relatórios Evidently |
+| `credit-fairness-e6` | Estado de fairness, suporte dos grupos, métricas e playbook agregados |
+
+Abra uma run para consultar **Parameters**, **Metrics**, **Tags** e **Artifacts**. O status técnico `FINISHED` significa que a execução concluiu; a tag `PROCESSED_WITH_ALERTS` indica alerta de negócio/monitoramento e não uma falha técnica. Os logs de preparação registram sucesso ou falha sanitizada por etapa. Duração, volume, contagens de falhas e alertas, CPUs disponíveis e pico de memória do processo oferecem sinais locais de saúde; não constituem monitoramento contínuo de uma infraestrutura de produção.
+
+O [relatório HTML agregado](artifacts/evidence/drift-observability-report.html) oferece uma visão sem servidor. O [resumo de preparação](artifacts/evidence/data-preparation-summary.json) e o [resumo consolidado](artifacts/evidence/monitoring-summary.json) contêm os estados e a proveniência exportados. As evidências versionadas foram geradas a partir de código com revisão e hash registrados; ao executar a demo, novos IDs e informações de proveniência são gerados para seu ambiente.
+
+## 4. Governança, privacidade e causalidade — 15%
+
+### Finalidade, tratamento e base legal
+
+Este é um projeto acadêmico com dataset público; nenhuma decisão real de crédito é tomada. No cenário hipotético, a fintech seria controladora e a hipótese de base legal para monitoramento de risco da carteira é **proteção do crédito, art. 7º, X, da LGPD**. Sua aplicação à finalidade concreta, inclusive a uma eventual decisão de crédito, exige validação jurídica; este projeto não certifica conformidade legal.
+
+O `ID` é usado para associação de registros e não é feature do modelo. Sexo, idade, educação e estado civil também ficam fora das features de scoring; sexo e faixas de idade são usados em uma visão de auditoria restrita, mantida em memória. Dados locais, scores e desfechos individuais não são versionados nem enviados aos logs e artefatos MLflow da demonstração. As evidências de entrega são agregadas; grupos sem suporte suficiente têm métricas suprimidas.
+
+### Retenção e controles
+
+Para uma implantação hipotética, propõe-se: quarentena por até **30 dias**; associação score–desfecho e visão restrita por **13 meses**; métricas, contratos e validações durante a vida do modelo mais **cinco anos**. Findo o prazo, excluir ou anonimizar com evidência verificável. São prazos propostos, não uma política automatizada implementada neste repositório.
+
+Uma implantação real ainda exigiria validação jurídica, criptografia, controle de acesso por papel, pseudonimização, trilha imutável de acesso, avaliação de impacto, revisão humana e procedimentos para os direitos dos titulares previstos no art. 18. O plano e as responsabilidades estão em [`docs/governance-plan.md`](docs/governance-plan.md).
+
+### Vieses e resposta de governança
+
+A auditoria Fairlearn de M3 compara grupos de sexo e faixas etárias fixas `21-29`, `30-39` e `40+`. Publica métricas de erro somente para grupos com pelo menos **200 registros, 30 eventos e 30 não eventos**. O limiar de decisão é comum aos grupos e os atributos demográficos não entram no modelo.
+
+| Comparação | Diferença de equalized odds | IC bootstrap 95% |
+|---|---:|---:|
+| Sexo | 0,0458 | [0,0092; 0,1556] |
+| Faixa etária | 0,1344 | [0,0662; 0,2766] |
+
+O ponto estimado para idade supera 0,10, mas o limite inferior do intervalo não supera o gatilho operacional de 0,10. O estado é `MONITORING_CONTINUES`: manter o monitoramento e buscar desfechos temporais reais antes de mudanças de política. Não há mitigação, retreino, promoção ou limiar por grupo automáticos. Se não houver suporte, a comparação é bloqueada; um alerta sustentado exige investigação humana.
+
+**Para conferir:** veja [`e6-fairness-summary.json`](artifacts/evidence/e6-fairness-summary.json), sobretudo `analyses` e `playbook`; execute `make notebook-fairness` após a demo para percorrer a auditoria. Detalhes e limitações estão em [`docs/fairness-plan.md`](docs/fairness-plan.md). Os rótulos são sintéticos, não incluem efeito demográfico explícito e a análise não cobre todos os proxies nem interseccionalidade; o resultado não demonstra ausência de viés.
+
+### Causalidade e limites da demonstração
 
 ```mermaid
 flowchart LR
@@ -192,20 +177,24 @@ flowchart LR
     X --> Y
 ```
 
-Em M3, o projeto intervém somente no mecanismo sintético de desfecho, preservando
-as mesmas entradas, scores e sorteios pareados para comparar `p0(X)` e `p1(X)`.
-Isso comprova o mecanismo programado, não identifica efeito de inflação,
-desemprego ou política de crédito no mundo real. O dataset é transversal, de
-Taiwan em 2005, contém apenas clientes já aprovados e pode carregar proxies de
-políticas históricas. O DAG e as hipóteses completas estão em
-[`docs/causal-model.md`](docs/causal-model.md).
+O DAG representa hipóteses, não relações identificadas pelos dados. Em M3, a intervenção é feita no mecanismo **sintético** do desfecho, mantendo entradas, scores e sorteios pareados para comparar `p0(X)` e `p1(X)`. Isso mostra o funcionamento do experimento, mas não identifica efeito causal de inflação, desemprego ou política de crédito no mundo real. O dataset é transversal, de Taiwan em 2005, e contém clientes já aprovados; sua representatividade é limitada. Veja [`docs/causal-model.md`](docs/causal-model.md).
 
-Os rótulos de fairness também são sintéticos e não incluem um efeito demográfico
-explícito. A análise não cobre interseccionalidade, candidatos rejeitados ou todos
-os proxies possíveis; portanto não demonstra ausência de viés.
+## 5. Vídeo STAR — 15%
 
-## Vídeo STAR
+**Pendente:** gravar um vídeo de até cinco minutos e inserir aqui seu link público ou acessível ao avaliador. O [roteiro STAR](docs/video-star-plan.md) organiza situação, tarefa, ações e resultados; o [checklist da demonstração](docs/final-demo-checklist.md) ajuda a preparar as telas e a conferir os limites de privacidade.
 
-O roteiro cronometrado está em [`docs/video-star-plan.md`](docs/video-star-plan.md).
-O link do vídeo de até cinco minutos deve ser incluído aqui após a gravação; esta é
-a única etapa obrigatória que não pode ser produzida automaticamente pelo pipeline.
+## Comandos e arquivos para aprofundar
+
+| Comando | Resultado |
+|---|---|
+| `make check` | Lint, formatação, testes e verificação estática dos quatro notebooks |
+| `make demo` | Demonstração completa e atualização das evidências |
+| `make d4-demo` | Apenas a demonstração sintética D4 |
+| `make e4` | Preparação dos dados e treino do modelo real |
+| `make e5` | Preparação, treino e monitoramento das três safras |
+| `make e6` | Preparação, treino e auditoria de fairness M3 |
+| `make evidence` | Reexportação das evidências a partir das runs locais existentes |
+| `make notebook`, `make notebook-real`, `make notebook-drift`, `make notebook-fairness` | Abrir os notebooks Marimo correspondentes |
+| `make mlflow-ui` | Iniciar o servidor MLflow local na porta 5000 |
+
+O mapa completo entre exigências e evidências está em [`docs/requirements-traceability.md`](docs/requirements-traceability.md); a arquitetura e os demais documentos estão em [`docs/README.md`](docs/README.md). O [enunciado oficial](techchallenge/MLET%20-%20Tech%20Challenge%20-%20Fase%204-1.pdf) contém os critérios e pesos da avaliação.
